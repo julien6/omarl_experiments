@@ -32,7 +32,17 @@ A typical workflow would consist in:
 3) Launching the training over several iterations (or epoch) to get several successful joint-policies
 4) Extracting some organizational specifications out of thee joint-policies concerning the emergent organization
 
+## Tutorial: Predator-prey with communication
+
+![alt text](https://github.com/julien6/omarl_experiments/blob/main/images/mpe_simple_world_comm.gif?raw=true)
+
+Simple World Comm is a predator-prey environment. Good agents (green) are faster and receive a negative reward for being hit by adversaries (red) (-10 for each collision). Adversaries are slower and are rewarded for hitting good agents (+10 for each collision). Obstacles (large black circles) block the way. By default, there is 1 good agent, 3 adversaries and 2 obstacles.
+
+Additionally there is food (small blue balls) that the good agents are rewarded for being near, there are ‘forests’ that hide agents inside from being seen, and there is a ‘leader adversary’ that can see the agents at all times and can communicate with the other adversaries to help coordinate the chase. By default, there are 2 good agents, 3 adversaries, 1 obstacles, 2 foods, and 2 forests.
+
+In particular, the good agents reward, is -5 for every collision with an adversary, -2 x bound by the bound function described in simple_tag, +2 for every collision with a food, and -0.05 x minimum distance to any food. The adversarial agents are rewarded +5 for collisions and -0.1 x minimum distance to a good agent. s
+
 ## Tutorial: Knights Archers Zombies
 
-![alt text](https://github.com/julien6/omarl_experiments/images/butterfly_knights_archers_zombies.gif?raw=true)
+![alt text](https://github.com/julien6/omarl_experiments/blob/main/images/butterfly_knights_archers_zombies.gif?raw=true)
 
