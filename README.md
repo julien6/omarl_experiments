@@ -37,19 +37,15 @@ A typical workflow would consist in:
    
 2) Create a new clean virtual python environment:
 
-```cd ~; mkdir python-envs; cd python-envs; python -m venv pamid; source pamid/bin/activate; cd ~
+```cd ~; mkdir python-envs; cd python-envs; python -m venv pamid; source pamid/bin/activate; cd ~```
 
-```
-
-3) In cloned repo, type:
+1) In cloned repo, type:
 
 ```python install requirements.txt```
 
 4) Then, type:
 
-```pip install -e .
-
-```
+```pip install -e .```
 
 ## Tutorial: Predator-prey with communication
 
