@@ -12,7 +12,7 @@ OMARL's original interest is to have an explicit way to view and act on a set le
 
 ## Dec-POMDP $\mathcal{M}OISE^+$ OMARL (DMO)
 
-*Dec-POMDP $\mathcal{M}OISE^+$ OMARL* (DMO) is first attempt to implement a process that fits OMARL goal as for linking:
+*Dec-POMDP* $\mathcal{M}OISE^+$ *OMARL* (DMO) is first attempt to implement a process that fits OMARL goal as for linking:
  - **Decentralized Partially Observable Markov Decision Process** (Dec-PODMP): a model for using MARL in any formalized scenario; 
  - **$\mathcal{M}OISE^+$**: an organizational model that relies on structural, functional and deontic specifications to describe a MAS organization
 
