@@ -6,7 +6,7 @@ In a regular MARL scenario, agents' policies (their rules) are updated via an al
 
 Unfortunately, when getting interested to have an organization point-of-view, the "trained" or "on training" joint-policy gives "learned" rules that could be mixing the individual, social (interactions in neighborhood) or even collective level (interactions with majority).
 
-Even though some works have pushing forward interest for emergent collective phenomena in MARL, none has considered using an organization model to characterize them (as cooperation schemes, roles, missions...); or even driving the agents' learning through extra organizational specifications.
+Even though some works have been pushing forward interest for emergent collective phenomena in MARL, none has considered using an organization model to characterize them (as cooperation schemes, roles, missions...); or even driving the agents' learning through extra organizational specifications.
 
 OMARL's original interest is to have an explicit way to view and act on a set learning agents not only at individual but also social and collective levels.
 
