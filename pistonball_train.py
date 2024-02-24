@@ -114,5 +114,5 @@ if __name__ == "__main__":
         checkpoint_freq=1,
         local_dir=local_dir + "/ray_results/" + env_name,
         config=configuration,
-        num_samples=10
+        # num_samples=10
     )
