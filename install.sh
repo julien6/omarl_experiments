@@ -1,7 +1,7 @@
 #!/bin/bash
 mkdir python-envs;
 cd python-envs;
-python -m venv pistonball;
+python3 -m venv pistonball;
 source pistonball/bin/activate;
 pip install -r requirements.txt;
 pip install "ray[tune]";
