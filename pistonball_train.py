@@ -67,8 +67,8 @@ def env_creator(args):
 
 
 if __name__ == "__main__":
-    # ray.init()
-    ray.init(address='auto')
+    ray.init()
+    # ray.init(address='auto')
 
     env_name = "pistonball_v6"
 
