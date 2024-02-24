@@ -94,10 +94,17 @@ if __name__ == "__main__":
         )
         .debugging(log_level="ERROR")
         .framework(framework="torch")
-        .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
+        # .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
+        .resources(num_gpus=1)
     )
 
     local_dir = os.path.dirname(os.path.abspath(__file__))
+
+    configuration = config.to_dict()
+    configuration.update({
+        "num_gpus": 1,
+        "num_cpus": 5
+    })
 
     tune.run(
         "PPO",
@@ -105,6 +112,7 @@ if __name__ == "__main__":
         stop={"timesteps_total": 5000000 if not os.environ.get(
             "CI") else 50000},
         checkpoint_freq=1,
-        local_dir= local_dir + "/ray_results/" + env_name,
-        config=config.to_dict(),
+        local_dir=local_dir + "/ray_results/" + env_name,
+        config=configuration,
+        num_samples=10
     )
