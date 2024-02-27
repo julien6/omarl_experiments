@@ -95,17 +95,13 @@ if __name__ == "__main__":
         )
         .debugging(log_level="ERROR")
         .framework(framework="torch")
-        # .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
-        .resources(num_gpus=1)
+        .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
+        # .resources(num_gpus=1)
     )
 
     local_dir = os.path.dirname(os.path.abspath(__file__))
 
     configuration = config.to_dict()
-    configuration.update({
-        "num_gpus": 1,
-        "num_cpus": 5
-    })
 
     tune.run(
         "PPO",
