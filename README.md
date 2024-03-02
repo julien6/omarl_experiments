@@ -16,7 +16,7 @@ OMARL's original interest is to have an explicit way to view and act on a set le
  - **Decentralized Partially Observable Markov Decision Process** (Dec-PODMP): a model for using MARL in any formalized scenario; 
  - **$\mathcal{M}OISE^+$**: an organizational model that relies on structural, functional and deontic specifications to describe a MAS organization
 
-We proposed the *Partially Action-based $\mathcal{M}OISE^+$ Identification DMO* (PRAHOM), a DMO process that allows:
+We proposed the *Partial Relations with Agent History and Organization Model (PRAHOM)* (PRAHOM), a DMO process that allows:
  - Getting the resulting organizational specifications out of a given joint-policy by linking actions with known organizational specification; 
  - Constraining the agents' training to respect some organizational specifications by restricting available agents' actions at each step
 
