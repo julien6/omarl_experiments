@@ -71,7 +71,7 @@ def env_creator():
     env = pistonball_v6.env(
         n_pistons=5,
         time_penalty=-0.1,
-        continuous=True,
+        continuous=False,
         random_drop=True,
         random_rotate=True,
         ball_mass=0.75,
@@ -130,6 +130,5 @@ frame_list[0].save(
 )
 
 # compute the organizational specifications out of the joint-policy
-print({agent: [float(action[0]) if action is not None else 0. for _,
+print({agent: [int(action) if action is not None else 1 for _,
       action, _ in data] for agent, data in trajectories.items()})
-
