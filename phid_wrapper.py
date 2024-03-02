@@ -5,8 +5,9 @@ from typing import Any
 from pettingzoo.utils.wrappers import BaseWrapper
 from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType
 
+# Partial Relations with Agent History and Organization Model (PRAHOM)
 
-class PhidWrapper(BaseWrapper):
+class PrahomWrapper(BaseWrapper):
     """Creates a wrapper around `env` parameter.
 
     All AECEnv wrappers should inherit from this base class

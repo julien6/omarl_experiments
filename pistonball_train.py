@@ -14,8 +14,8 @@ from ray.rllib.models import ModelCatalog
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.tune.registry import register_env
 from torch import nn
-
 from pettingzoo.butterfly import pistonball_v6
+from datetime import datetime
 
 
 class CNNModelV2(TorchModelV2, nn.Module):
@@ -48,9 +48,9 @@ class CNNModelV2(TorchModelV2, nn.Module):
 
 def env_creator(args):
     env = pistonball_v6.parallel_env(
-        n_pistons=20,
+        n_pistons=5,
         time_penalty=-0.1,
-        continuous=True,
+        continuous=False,
         random_drop=True,
         random_rotate=True,
         ball_mass=0.75,
@@ -58,6 +58,7 @@ def env_creator(args):
         ball_elasticity=1.5,
         max_cycles=125,
     )
+    env.reset(42)
     env = ss.color_reduction_v0(env, mode="B")
     env = ss.dtype_v0(env, "float32")
     env = ss.resize_v1(env, x_size=84, y_size=84)
@@ -67,8 +68,8 @@ def env_creator(args):
 
 
 if __name__ == "__main__":
+    ray.shutdown()
     ray.init()
-    # ray.init(address='auto')
 
     env_name = "pistonball_v6"
 
@@ -96,20 +97,70 @@ if __name__ == "__main__":
         .debugging(log_level="ERROR")
         .framework(framework="torch")
         .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
-        # .resources(num_gpus=1)
     )
 
     local_dir = os.path.dirname(os.path.abspath(__file__))
 
     configuration = config.to_dict()
 
-    tune.run(
-        "PPO",
-        name="PPO",
-        stop={"timesteps_total": 5000000 if not os.environ.get(
-            "CI") else 50000},
-        checkpoint_freq=1,
-        local_dir=local_dir + "/ray_results/" + env_name,
-        config=configuration,
-        # num_samples=10
-    )
+    # Restauration d'un checkpoint
+    # Le chemin vers le dossier où les checkpoints sont stockés
+    checkpoint_dir = os.path.join(local_dir, "ray_results", env_name, "PPO")
+
+    if (os.path.exists(checkpoint_dir)):
+
+        # Trouver tous les fichiers de checkpoint dans le dossier
+        checkpoint_trial_folders = [f for f in os.listdir(
+            checkpoint_dir) if f.startswith("PPO_")]
+
+        date_format = '%Y-%m-%d_%H-%M-%S'
+
+        # Trier les fichiers de checkpoint par numéro de checkpoint
+        # PPO_pistonball_v6_3594a_00000_0_2024-02-29_14-19-52
+        checkpoint_trial_folders.sort(
+            key=lambda f: datetime.strptime(str(f[-19:]), date_format))
+
+        checkpoint_dir = os.path.join(
+            checkpoint_dir, checkpoint_trial_folders[-1])
+
+        # Trouver tous les fichiers de checkpoint dans le dossier
+        checkpoint_files = [f for f in os.listdir(
+            checkpoint_dir) if f.startswith("checkpoint_")]
+
+        # Trier les fichiers de checkpoint par numéro de checkpoint
+        checkpoint_files.sort(key=lambda f: int(f.split("_")[1]))
+
+        # Le chemin vers le dernier fichier de checkpoint
+        last_checkpoint = os.path.join(checkpoint_dir, checkpoint_files[-1])
+
+        print("Last checkpoint path: ", last_checkpoint)
+
+        analysis = tune.run(
+            "PPO",
+            name="PPO",
+            stop={"timesteps_total": 5000000 if not os.environ.get(
+                "CI") else 50000},
+            checkpoint_freq=1,
+            local_dir=local_dir + "/ray_results/" + env_name,
+            config=configuration,
+            restore=last_checkpoint
+        )
+    else:
+
+        analysis = tune.run(
+            "PPO",
+            name="PPO",
+            stop={"timesteps_total": 5000000 if not os.environ.get(
+                "CI") else 50000},
+            checkpoint_freq=1,
+            local_dir=local_dir + "/ray_results/" + env_name,
+            config=configuration
+        )
+
+    print(analysis)
+
+    # Obtenez le chemin vers le checkpoint du meilleur essai
+    best_trial = analysis.get_best_trial("episode_reward_mean")
+    best_checkpoint = best_trial.checkpoint.value
+
+    print(best_checkpoint)

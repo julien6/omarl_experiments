@@ -16,13 +16,13 @@ OMARL's original interest is to have an explicit way to view and act on a set le
  - **Decentralized Partially Observable Markov Decision Process** (Dec-PODMP): a model for using MARL in any formalized scenario; 
  - **$\mathcal{M}OISE^+$**: an organizational model that relies on structural, functional and deontic specifications to describe a MAS organization
 
-We proposed the *Partially Action-based $\mathcal{M}OISE^+$ Identification DMO* (PAMID), a DMO process that allows:
+We proposed the *Partially Action-based $\mathcal{M}OISE^+$ Identification DMO* (PRAHOM), a DMO process that allows:
  - Getting the resulting organizational specifications out of a given joint-policy by linking actions with known organizational specification; 
  - Constraining the agents' training to respect some organizational specifications by restricting available agents' actions at each step
 
-## PAMID Gym-wrapper
+## PRAHOM Gym-wrapper
 
-The PAMID process resulted in an algorithm we integrated within the Pettingzoo interface under the form of a Gym wrapper for easy use. That Gym wrapper is to be used to apply ORMARL on environment that requires collaboration and organization among agents.
+The PRAHOM process resulted in an algorithm we integrated within the Pettingzoo interface under the form of a Gym wrapper for easy use. That Gym wrapper is to be used to apply ORMARL on environment that requires collaboration and organization among agents.
 
 A typical workflow would consist in:
 
@@ -37,7 +37,7 @@ A typical workflow would consist in:
    
 2) Create a new clean virtual python environment:
 
-```cd ~; mkdir python-envs; cd python-envs; python -m venv pamid; source pamid/bin/activate; cd ~```
+```cd ~; mkdir python-envs; cd python-envs; python -m venv prahom; source prahom/bin/activate; cd ~```
 
 1) In cloned repo, type:
 
@@ -59,7 +59,7 @@ Additionally there is food (small blue balls) that the good agents are rewarded 
 
 In particular, the good agents reward, is -5 for every collision with an adversary, -2 x bound by the bound function described in simple_tag, +2 for every collision with a food, and -0.05 x minimum distance to any food. The adversarial agents are rewarded +5 for collisions and -0.1 x minimum distance to a good agent.
 
-### PAMID Gym-wrapper use:
+### PRAHOM Gym-wrapper use:
 
 Basic example
 
@@ -72,7 +72,7 @@ env = simple_world_comm_v3.parallel_env(render_mode="human")
 action_to_specs = ...
 training_specs = ...
 
-# wrapping the initial environment to use PAMID
+# wrapping the initial environment to use PRAHOM
 env = PamidWrapper(env, action_to_specs, training_specs, unknown_specs_inference=True, pca_output=True)
 
 observations, infos = env.reset()
@@ -83,9 +83,9 @@ while env.agents:
 
     observations, rewards, terminations, truncations, infos = env.step(actions)
 
-# getting pamid output
-env.pamid_render_pca() # print the joint-policies in a PCA for comparison between agents (help to analyze similar agents behaviors)
-trained_specs, agent_to_specs = env.pamid_specs()
+# getting prahom output
+env.prahom_render_pca() # print the joint-policies in a PCA for comparison between agents (help to analyze similar agents behaviors)
+trained_specs, agent_to_specs = env.prahom_specs()
 
 env.close()
 
@@ -126,8 +126,8 @@ TODO: showing the learning curve with and without OMARL, time to converge, stabi
 Finally, we can extract the organizational specifications out of the resulting
 
 ```python
-env.pamid_render_pca() # print the joint-policies in a PCA for comparison
-trained_specs, agent_to_specs = env.pamid_specs()
+env.prahom_render_pca() # print the joint-policies in a PCA for comparison
+trained_specs, agent_to_specs = env.prahom_specs()
 ```
 
 Printing the "agent_to_specs"

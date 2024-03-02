@@ -5,9 +5,9 @@ Author: Rohan (https://github.com/Rohan138)
 
 import argparse
 import os
-
 import ray
 import supersuit as ss
+
 from PIL import Image
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
@@ -15,7 +15,6 @@ from ray.rllib.models import ModelCatalog
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.tune.registry import register_env
 from torch import nn
-
 from pettingzoo.butterfly import pistonball_v6
 
 
@@ -70,7 +69,7 @@ ModelCatalog.register_custom_model("CNNModelV2", CNNModelV2)
 
 def env_creator():
     env = pistonball_v6.env(
-        n_pistons=20,
+        n_pistons=5,
         time_penalty=-0.1,
         continuous=True,
         random_drop=True,
@@ -81,6 +80,7 @@ def env_creator():
         max_cycles=125,
         render_mode="rgb_array"
     )
+    env.reset(42)
     env = ss.color_reduction_v0(env, mode="B")
     env = ss.dtype_v0(env, "float32")
     env = ss.resize_v1(env, x_size=84, y_size=84)
@@ -93,7 +93,7 @@ env = env_creator()
 env_name = "pistonball_v6"
 register_env(env_name, lambda config: PettingZooEnv(env_creator()))
 
-
+ray.shutdown()
 ray.init()
 
 PPOagent = PPO.from_checkpoint(checkpoint_path)
@@ -103,13 +103,18 @@ frame_list = []
 i = 0
 env.reset()
 
+trajectories = {agent_id: [] for agent_id in env.agents}
+
 for agent in env.agent_iter():
     observation, reward, termination, truncation, info = env.last()
     reward_sum += reward
+    action = None
     if termination or truncation:
         action = None
     else:
         action = PPOagent.compute_single_action(observation)
+
+    trajectories[agent].append((observation, action, reward))
 
     env.step(action)
     i += 1
@@ -123,3 +128,8 @@ print(reward_sum)
 frame_list[0].save(
     "out.gif", save_all=True, append_images=frame_list[1:], duration=3, loop=0
 )
+
+# compute the organizational specifications out of the joint-policy
+print({agent: [float(action[0]) if action is not None else 0. for _,
+      action, _ in data] for agent, data in trajectories.items()})
+
