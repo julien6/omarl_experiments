@@ -7,6 +7,8 @@ import argparse
 import os
 import ray
 import supersuit as ss
+import json
+import numpy as np
 
 from PIL import Image
 from ray.rllib.algorithms.ppo import PPO
@@ -103,6 +105,11 @@ frame_list = []
 i = 0
 env.reset()
 
+print("================")
+print(env.action_spaces)
+print(env.observation_spaces)
+print("================")
+
 trajectories = {agent_id: [] for agent_id in env.agents}
 
 for agent in env.agent_iter():
@@ -132,3 +139,16 @@ frame_list[0].save(
 # compute the organizational specifications out of the joint-policy
 print({agent: [int(action) if action is not None else 1 for _,
       action, _ in data] for agent, data in trajectories.items()})
+
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.int32):
+            return int(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+
+json.dump(trajectories["piston_5"], open(
+    "trajectories.json", "w"), indent=4, cls=NumpyEncoder)

@@ -1,3 +1,8 @@
-python-envs/**
+pistonball/python-envs/**
+pistonball/ray_results/**
 
-ray_results/**
+pistonball2/python-envs/**
+pistonball2/ray_results/**
+
+kaz/python-envs/**
+kaz/ray_results/**
