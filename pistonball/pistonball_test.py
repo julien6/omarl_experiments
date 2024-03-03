@@ -69,7 +69,7 @@ ModelCatalog.register_custom_model("CNNModelV2", CNNModelV2)
 
 def env_creator():
     env = pistonball_v6.env(
-        n_pistons=5,
+        n_pistons=10,
         time_penalty=-0.1,
         continuous=False,
         random_drop=True,

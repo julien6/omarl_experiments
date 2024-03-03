@@ -16,6 +16,7 @@ from ray.tune.registry import register_env
 from torch import nn
 from pettingzoo.butterfly import pistonball_v6
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 
 class CNNModelV2(TorchModelV2, nn.Module):
@@ -48,7 +49,7 @@ class CNNModelV2(TorchModelV2, nn.Module):
 
 def env_creator(args):
     env = pistonball_v6.parallel_env(
-        n_pistons=5,
+        n_pistons=10,
         time_penalty=-0.1,
         continuous=False,
         random_drop=True,
@@ -107,6 +108,8 @@ if __name__ == "__main__":
     # Le chemin vers le dossier où les checkpoints sont stockés
     checkpoint_dir = os.path.join(local_dir, "ray_results", env_name, "PPO")
 
+    analysis = None
+
     if (os.path.exists(checkpoint_dir)):
 
         # Trouver tous les fichiers de checkpoint dans le dossier
@@ -157,10 +160,30 @@ if __name__ == "__main__":
             config=configuration
         )
 
-    print(analysis)
+    # print(analysis)
 
-    # Obtenez le chemin vers le checkpoint du meilleur essai
-    best_trial = analysis.get_best_trial("episode_reward_mean")
-    best_checkpoint = best_trial.checkpoint.value
+    # # Obtenez le chemin vers le checkpoint du meilleur essai
+    # best_trial = analysis.get_best_trial("episode_reward_mean")
+    # best_checkpoint = best_trial.checkpoint.value
+    # print(best_checkpoint)
 
-    print(best_checkpoint)
+    # # Specify the path to the directory containing checkpoint files
+    # checkpoint_dir = "./ray_results/pistonball_v6/PPO/PPO_pistonball_v6_8ef6f_00000_0_2024-03-01_16-58-34/"
+
+    # # Load the Analysis object
+    # analysis = tune.ExperimentAnalysis(checkpoint_dir)
+
+    # Access various information from the analysis object
+    # episode_rewards = analysis.dataframe["episode_reward_mean"]
+    # iterations = analysis.dataframe["training_iteration"]
+
+    # # Récupérer et tracer la courbe d'apprentissage
+    # episode_rewards = []
+    # for _, result in analysis.results.items():
+    #     episode_rewards.extend(result['hist_stats']['episode_reward'])
+
+    # plt.plot(episode_rewards)
+    # plt.xlabel("Épisode")
+    # plt.ylabel("Récompense cumulative")
+    # plt.title("Courbe d'apprentissage avec RLlib")
+    # plt.show()
