@@ -5,9 +5,10 @@ import supersuit as ss
 import os
 from array2gif import write_gif
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 if not os.path.exists("./policy.zip"):
+    print("Training")
     env = pistonball_v6.parallel_env(n_pistons=20, time_penalty=-0.1, continuous=True, random_drop=True,
                                      random_rotate=True, ball_mass=0.75, ball_friction=0.3, ball_elasticity=1.5, max_cycles=125)
     env = ss.color_reduction_v0(env, mode='B')
@@ -22,7 +23,9 @@ if not os.path.exists("./policy.zip"):
     model.save("policy")
 
 # Rendering
-env = pistonball_v6.env()
+print("Rendering")
+env = pistonball_v6.env(render_mode="rgb_array", n_pistons=20, time_penalty=-0.1, continuous=True, random_drop=True,
+                        random_rotate=True, ball_mass=0.75, ball_friction=0.3, ball_elasticity=1.5, max_cycles=125)
 env = ss.color_reduction_v0(env, mode='B')
 env = ss.resize_v1(env, x_size=84, y_size=84)
 env = ss.frame_stack_v1(env, 3)
@@ -56,3 +59,12 @@ print({agent: [int(act[0]) if act is not None else 0 for _,
                act, _ in data] for agent, data in trajectories.items()})
 print("average total reward: ", total_reward/NUM_RESETS)
 write_gif(obs_list, 'pistonball_test.gif', fps=15)
+
+# Plotting
+rewards = model.episode_reward
+plt.plot(rewards)
+plt.title('Évolution de la Récompense en fonction des Itérations')
+plt.xlabel('Itérations')
+plt.ylabel('Récompense')
+plt.savefig('rewards.png')
+# plt.show()
