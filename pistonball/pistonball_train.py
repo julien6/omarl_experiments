@@ -173,17 +173,15 @@ if __name__ == "__main__":
     # # Load the Analysis object
     # analysis = tune.ExperimentAnalysis(checkpoint_dir)
 
-    # Access various information from the analysis object
+    # # Access various information from the analysis object
     # episode_rewards = analysis.dataframe["episode_reward_mean"]
     # iterations = analysis.dataframe["training_iteration"]
 
-    # # Récupérer et tracer la courbe d'apprentissage
-    # episode_rewards = []
-    # for _, result in analysis.results.items():
-    #     episode_rewards.extend(result['hist_stats']['episode_reward'])
+    # # Plot the rewards over training iterations
+    # import matplotlib.pyplot as plt
 
-    # plt.plot(episode_rewards)
-    # plt.xlabel("Épisode")
-    # plt.ylabel("Récompense cumulative")
-    # plt.title("Courbe d'apprentissage avec RLlib")
+    # plt.plot(iterations, episode_rewards)
+    # plt.xlabel("Training Iteration")
+    # plt.ylabel("Mean Episode Reward")
+    # plt.title("Training Progress")
     # plt.show()
