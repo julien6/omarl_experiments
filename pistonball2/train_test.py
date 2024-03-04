@@ -9,34 +9,38 @@ import matplotlib.pyplot as plt
 from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnRewardThreshold
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import VecExtractDictObs, VecMonitor
+from stable_baselines3.common.callbacks import BaseCallback
 
+print("Training")
+
+if not os.path.exists("./tensorboard"):
+    os.makedirs("./tensorboard")
+if not os.path.exists("./logs"):
+    os.makedirs("./logs")
+
+env = pistonball_v6.parallel_env(n_pistons=20, time_penalty=-0.1, continuous=True, random_drop=True,
+                                 random_rotate=True, ball_mass=0.75, ball_friction=0.3, ball_elasticity=1.5, max_cycles=125)
+
+env = ss.color_reduction_v0(env, mode='B')
+env = ss.resize_v1(env, x_size=84, y_size=84)
+env = ss.frame_stack_v1(env, 3)
+env = ss.pettingzoo_env_to_vec_env_v1(env)
+env = ss.concat_vec_envs_v1(env, 8, num_cpus=4, base_class='stable_baselines3')
+
+eval_callback = EvalCallback(env, best_model_save_path="./logs/",
+                   log_path="./logs/", eval_freq=500, deterministic=True, render=False)
+
+model = PPO(CnnPolicy, env, verbose=1, tensorboard_log="./tensorboard/", gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
+            vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
 
 if not os.path.exists("./policy.zip"):
-    print("Training")
-
-    env = pistonball_v6.parallel_env(n_pistons=20, time_penalty=-0.1, continuous=True, random_drop=True,
-                                     random_rotate=True, ball_mass=0.75, ball_friction=0.3, ball_elasticity=1.5, max_cycles=125)
-    env = ss.color_reduction_v0(env, mode='B')
-    env = ss.resize_v1(env, x_size=84, y_size=84)
-    env = ss.frame_stack_v1(env, 3)
-    env = ss.pettingzoo_env_to_vec_env_v1(env)
-    env = ss.concat_vec_envs_v1(
-        env, 8, num_cpus=4, base_class='stable_baselines3')
 
     # # Stop training when the model reaches the reward threshold
     # callback_on_best = StopTrainingOnRewardThreshold(
     #     reward_threshold=-200, verbose=1)
     # eval_callback = EvalCallback(
     #     env, callback_on_new_best=callback_on_best, verbose=1)
-
-    if not os.path.exists("./tensorboard"):
-        os.makedirs("./tensorboard")
-    if not os.path.exists("./tmp"):
-        os.makedirs("./tmp")
-    env = Monitor(env, "./tmp")
-
-    model = PPO(CnnPolicy, env, verbose=1, tensorboard_log="./tensorboard/", gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
-                vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
 
     """
     if not os.path.exists("./sb3_logs"):
@@ -50,7 +54,14 @@ if not os.path.exists("./policy.zip"):
     # early as soon as the reward threshold is reached
     model.learn(total_timesteps=2000000, callback=eval_callback)
     """
-    model.learn(total_timesteps=2000000)
+
+    model.learn(total_timesteps=2000000, callback=eval_callback, progress_bar=True)
+    model.save("policy")
+
+else:
+    print("Resuming training")
+    model = PPO.load(path="policy.zip", env=env)
+    model.learn(total_timesteps=2000000, callback=eval_callback, progress_bar=True)
     model.save("policy")
 
 
