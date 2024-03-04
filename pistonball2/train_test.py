@@ -55,7 +55,7 @@ if not os.path.exists("./policy.zip"):
     model.learn(total_timesteps=2000000, callback=eval_callback)
     """
 
-    model.learn(total_timesteps=2000000, callback=eval_callback, progress_bar=True)
+    model.learn(total_timesteps=2000000, callback=eval_callback, )
     model.save("policy")
 
 else:
