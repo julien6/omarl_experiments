@@ -20,11 +20,15 @@ if not os.path.exists("./policy.zip"):
     env = ss.pettingzoo_env_to_vec_env_v1(env)
     env = ss.concat_vec_envs_v1(
         env, 8, num_cpus=4, base_class='stable_baselines3')
-    
+
+    env_eval = pistonball_v6.parallel_env(n_pistons=20, time_penalty=-0.1, continuous=True, random_drop=True,
+                                          random_rotate=True, ball_mass=0.75, ball_friction=0.3, ball_elasticity=1.5, max_cycles=125)
     # Stop training when the model reaches the reward threshold
-    callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=-200, verbose=1)
-    eval_callback = EvalCallback(env, callback_on_new_best=callback_on_best, verbose=1)
-    
+    callback_on_best = StopTrainingOnRewardThreshold(
+        reward_threshold=-200, verbose=1)
+    eval_callback = EvalCallback(
+        env_eval, callback_on_new_best=callback_on_best, verbose=1)
+
     model = PPO(CnnPolicy, env, verbose=1, gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
                 vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
 
