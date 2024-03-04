@@ -6,6 +6,7 @@ import os
 from array2gif import write_gif
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnRewardThreshold
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.monitor import Monitor
@@ -28,40 +29,33 @@ env = ss.frame_stack_v1(env, 3)
 env = ss.pettingzoo_env_to_vec_env_v1(env)
 env = ss.concat_vec_envs_v1(env, 8, num_cpus=4, base_class='stable_baselines3')
 
-eval_callback = EvalCallback(env, best_model_save_path="./logs/",
-                   log_path="./logs/", eval_freq=500, deterministic=True, render=False)
+
+# Stop training when the model reaches the reward threshold
+callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=1500, verbose=1)
+
+eval_callback = EvalCallback(env, best_model_save_path="./logs/", callback_on_new_best=callback_on_best, verbose=1, log_path="./logs/", eval_freq=500, deterministic=True, render=False)
 
 model = PPO(CnnPolicy, env, verbose=1, tensorboard_log="./tensorboard/", gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
             vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
 
+# if not os.path.exists("./sb3_logs"):
+#     os.makedirs("./sb3_logs")
+# tmp_path = "./sb3_logs"
+# # set up logger
+# new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+# model.set_logger(new_logger)
+
 if not os.path.exists("./policy.zip"):
-
-    # # Stop training when the model reaches the reward threshold
-    # callback_on_best = StopTrainingOnRewardThreshold(
-    #     reward_threshold=-200, verbose=1)
-    # eval_callback = EvalCallback(
-    #     env, callback_on_new_best=callback_on_best, verbose=1)
-
-    """
-    if not os.path.exists("./sb3_logs"):
-        os.makedirs("./sb3_logs")
-    tmp_path = "./sb3_logs"
-    # set up logger
-    new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
-    model.set_logger(new_logger)
 
     # Almost infinite number of timesteps, but the training will stop
     # early as soon as the reward threshold is reached
-    model.learn(total_timesteps=2000000, callback=eval_callback)
-    """
-
-    model.learn(total_timesteps=2000000, callback=eval_callback, )
+    model.learn(total_timesteps=int(1e10), callback=eval_callback)
     model.save("policy")
 
 else:
     print("Resuming training")
     model = PPO.load(path="policy.zip", env=env)
-    model.learn(total_timesteps=2000000, callback=eval_callback, progress_bar=True)
+    model.learn(total_timesteps=int(1e10), callback=eval_callback, progress_bar=True)
     model.save("policy")
 
 
@@ -111,3 +105,7 @@ write_gif(obs_list, 'pistonball_test.gif', fps=15)
 # plt.ylabel('Récompense')
 # plt.savefig('rewards.png')
 # # plt.show()
+
+print("Finished")
+
+sys.exit(0)
