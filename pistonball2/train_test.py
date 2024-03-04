@@ -33,6 +33,7 @@ if not os.path.exists("./policy.zip"):
     model = PPO(CnnPolicy, env, verbose=1, tensorboard_log="./tensorboard/", gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
                 vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
 
+    """
     if not os.path.exists("./sb3_logs"):
         os.makedirs("./sb3_logs")
     tmp_path = "./sb3_logs"
@@ -43,6 +44,9 @@ if not os.path.exists("./policy.zip"):
     # Almost infinite number of timesteps, but the training will stop
     # early as soon as the reward threshold is reached
     model.learn(total_timesteps=2000000, callback=eval_callback)
+    """
+
+    model.learn(total_timesteps=200, callback=eval_callback)
     model.save("policy")
 
 
@@ -53,7 +57,7 @@ env = ss.color_reduction_v0(env, mode='B')
 env = ss.resize_v1(env, x_size=84, y_size=84)
 env = ss.frame_stack_v1(env, 3)
 
-model = PPO.load("policy")
+model = PPO.load("policy", tensorboard_log="./tensorboard/")
 obs_list = []
 
 total_reward = 0
