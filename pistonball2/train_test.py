@@ -25,7 +25,7 @@ if not os.path.exists("./policy.zip"):
     callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=-200, verbose=1)
     eval_callback = EvalCallback(env, callback_on_new_best=callback_on_best, verbose=1)
     
-    model = PPO(CnnPolicy, env, verbose=3, gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
+    model = PPO(CnnPolicy, env, verbose=1, gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
                 vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
 
     if not os.path.exists("./sb3_logs"):
