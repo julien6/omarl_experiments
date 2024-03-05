@@ -32,7 +32,7 @@ def main():
     env = ss.frame_stack_v1(env, 3)
     env = ss.pettingzoo_env_to_vec_env_v1(env)
     env = ss.concat_vec_envs_v1(
-        env, 8, num_cpus=4, base_class='stable_baselines3')
+        env, 8, num_cpus=8, base_class='stable_baselines3')
 
     # Stop training when the model reaches the reward threshold
     callback_on_best = StopTrainingOnRewardThreshold(
