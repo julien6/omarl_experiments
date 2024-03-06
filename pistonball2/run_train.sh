@@ -9,4 +9,4 @@
 
 cd /bettik/soulej/omarl_experiments/pistonball2
 source ./python-envs/pistonball2/bin/activate
-python3 train_test.py
+python3 train.py
