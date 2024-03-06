@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #OAR -n Pistonball
-#OAR -l /nodes=1/gpu=1,walltime=0:30:00
+#OAR -l /nodes=1/gpu=1,walltime=3:30:00
 #OAR --stdout %jobid%.out
 #OAR --stderr %jobid%.err
 #OAR --project pr-ai4cmas
