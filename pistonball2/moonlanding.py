@@ -7,20 +7,21 @@ from stable_baselines3.common.evaluation import evaluate_policy
 # Create environment
 env = gym.make("LunarLander-v2", render_mode="rgb_array")
 
-# Instantiate the agent
-model = DQN("MlpPolicy", env, verbose=1)
-# Train the agent and display a progress bar
-model.learn(total_timesteps=int(2e5), progress_bar=True)
-# Save the agent
-model.save("dqn_lunar")
-del model  # delete trained model to demonstrate loading
+# # Instantiate the agent
+# model = DQN("MlpPolicy", env, verbose=1)
+# # Train the agent and display a progress bar
+# model.learn(total_timesteps=int(2e5), progress_bar=True)
+# # Save the agent
+# model.save("dqn_lunar")
+# del model  # delete trained model to demonstrate loading
 
-# Load the trained agent
-# NOTE: if you have loading issue, you can pass `print_system_info=True`
-# to compare the system on which the model was trained vs the current one
-# model = DQN.load("dqn_lunar", env=env, print_system_info=True)
+# # Load the trained agent
+# # NOTE: if you have loading issue, you can pass `print_system_info=True`
+# # to compare the system on which the model was trained vs the current one
+# # model = DQN.load("dqn_lunar", env=env, print_system_info=True)
 model = DQN.load("dqn_lunar", env=env)
 
+print("ok")
 # Evaluate the agent
 # NOTE: If you use wrappers with your environment that modify rewards,
 #       this will be reflected here. To evaluate with original rewards,
