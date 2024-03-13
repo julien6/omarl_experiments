@@ -1,39 +1,15 @@
 import gymnasium as gym
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import SubprocVecEnv
-import torch
-from stable_baselines3.common.callbacks import EvalCallback
 
-# Définir le nombre d'environnements
-num_envs = 20
+from stable_baselines3 import SAC
+from stable_baselines3.common.env_util import make_vec_env
 
-# Créer une fonction pour créer un environnement Gym LunarLander
-def make_env():
-    return gym.make('LunarLander-v2')
+vec_env = make_vec_env("Pendulum-v1", n_envs=4, seed=0)
 
-# Créer un environnement vectorisé
-env = SubprocVecEnv([make_env for _ in range(num_envs)])
-
-# Configurer les paramètres pour utiliser les CPU
-num_cpu = 20  # Changer en fonction de votre configuration
-torch.set_num_threads(num_cpu)
-
-# Configurer les paramètres pour utiliser les GPU
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
-# Initialiser l'agent PPO
-model = PPO("MlpPolicy", env, device=device)
-
-# Callback pour sauver le meilleur modèle
-eval_callback = EvalCallback(env, best_model_save_path="./logs/", verbose=1,
-                             log_path="./logs/", eval_freq=500, deterministic=True, render=False)
-
-# Entraîner l'agent
-model.learn(total_timesteps=int(1e100), callback=eval_callback, progress_bar=True)
-
-# Sauvegarder le modèle entraîné
-model.save("ppo_lunar_lander")
-
+# We collect 4 transitions per call to `ènv.step()`
+# and performs 2 gradient steps per call to `ènv.step()`
+# if gradient_steps=-1, then we would do 4 gradients steps per call to `ènv.step()`
+model = SAC("MlpPolicy", vec_env, train_freq=1, gradient_steps=2, verbose=1)
+model.learn(total_timesteps=10_000)
 
 # ===========
 
