@@ -4,7 +4,8 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import set_random_seed
-
+from stable_baselines3.common.callbacks import EvalCallback
+from PIL import Image
 
 def make_env(env_id: str, rank: int, seed: int = 0):
     """
@@ -16,7 +17,7 @@ def make_env(env_id: str, rank: int, seed: int = 0):
     :param rank: index of the subprocess
     """
     def _init():
-        env = gym.make(env_id, render_mode="human")
+        env = gym.make(env_id, render_mode="rgb_array")
         env.reset(seed=seed + rank)
         return env
     set_random_seed(seed)
@@ -34,14 +35,24 @@ if __name__ == "__main__":
     # You can choose between `DummyVecEnv` (usually faster) and `SubprocVecEnv`
     # env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
 
-    model = PPO("MlpPolicy", vec_env, verbose=1)
-    model.learn(total_timesteps=25_000)
+    eval_callback = EvalCallback(vec_env, best_model_save_path="./logs/", verbose=1,
+                                 log_path="./logs/", eval_freq=500, deterministic=True, render=False)
 
+    model = PPO("MlpPolicy", vec_env, verbose=1)
+    model.learn(total_timesteps=25_000,
+                callback=eval_callback, progress_bar=True)
+
+    frame_list = []
     obs = vec_env.reset()
     for _ in range(1000):
         action, _states = model.predict(obs)
         obs, rewards, dones, info = vec_env.step(action)
-        vec_env.render()
+        # vec_env.render()
+        img = Image.fromarray(vec_env.render())
+        frame_list.append(img)
+
+    frame_list[0].save("moonlanding.gif", save_all=True,
+                    append_images=frame_list[1:], duration=3, loop=0)
 
 # ===========
 
