@@ -26,7 +26,7 @@ def make_env(env_id: str, rank: int, seed: int = 0):
 
 if __name__ == "__main__":
     env_id = "CartPole-v1"
-    num_cpu = 4  # Number of processes to use
+    num_cpu = 10  # Number of processes to use
     # Create the vectorized environment
     vec_env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
 
