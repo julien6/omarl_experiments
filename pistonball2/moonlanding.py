@@ -39,7 +39,7 @@ if __name__ == "__main__":
                                  log_path="./logs/", eval_freq=500, deterministic=True, render=False)
 
     model = PPO("MlpPolicy", vec_env, verbose=1)
-    model.learn(total_timesteps=25_000,
+    model.learn(total_timesteps=2e10,
                 callback=eval_callback, progress_bar=True)
 
     frame_list = []
