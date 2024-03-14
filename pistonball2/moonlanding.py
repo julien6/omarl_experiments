@@ -80,8 +80,8 @@ if __name__ == "__main__":
 
     # exenv = Expenv("CartPole-v1", 10)
     exenv = Expenv("LunarLander-v2", 10)
-    exenv.train()
-    # exenv.test()
+    # exenv.train()
+    exenv.test()
 
 # ===========
 
