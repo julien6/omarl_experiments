@@ -1,3 +1,4 @@
+from typing import List
 import gymnasium as gym
 
 from stable_baselines3 import PPO
@@ -6,6 +7,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import EvalCallback
 from PIL import Image
+
 
 def make_env(env_id: str, rank: int, seed: int = 0):
     """
@@ -24,35 +26,61 @@ def make_env(env_id: str, rank: int, seed: int = 0):
     return _init
 
 
+class Expenv():
+
+    def __init__(self, env_id: str, num_cpu: int) -> None:
+        self.env_id = env_id
+        self.num_cpu = num_cpu
+
+        # Create the vectorized environment
+        self.vec_env = SubprocVecEnv(
+            [make_env(self.env_id, i) for i in range(self.num_cpu)])
+
+        # Stable Baselines provides you with make_vec_env() helper
+        # which does exactly the previous steps for you.
+        # You can choose between `DummyVecEnv` (usually faster) and `SubprocVecEnv`
+        # env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
+
+    def train(self):
+
+        eval_callback = EvalCallback(self.vec_env, best_model_save_path="./logs/", verbose=1,
+                                     log_path="./logs/", eval_freq=500, deterministic=True, render=False)
+
+        self.model = PPO("MlpPolicy", self.vec_env, verbose=1)
+        self.model.learn(total_timesteps=2e10,
+                    callback=eval_callback, progress_bar=True)
+        del self.model
+        # env =gym.make(env_id, render_mode="rgb_array")
+
+    def test(self):
+
+        self.model = PPO.load("./logs/best_model.zip")
+
+        reward_total = [0] * self.num_cpu
+        frame_list = []
+        
+        obs = self.vec_env.reset()
+        for _ in range(1000):
+            action, _states = self.model.predict(obs)
+            obs, rewards, dones, info = self.vec_env.step(action)
+            reward_total = [reward_total[index]+reward for index,
+                            reward in enumerate(rewards.tolist())]
+            # vec_env.render()
+            img = Image.fromarray(self.vec_env.render())
+            frame_list.append(img)
+
+        frame_list[0].save(f"{self.env_id}.gif", save_all=True,
+                           append_images=frame_list[1:], duration=3, loop=0)
+
+        print("Total rewards: ", reward_total)
+        print("Finished")
+
+
 if __name__ == "__main__":
-    env_id = "CartPole-v1"
-    num_cpu = 10  # Number of processes to use
-    # Create the vectorized environment
-    vec_env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
 
-    # Stable Baselines provides you with make_vec_env() helper
-    # which does exactly the previous steps for you.
-    # You can choose between `DummyVecEnv` (usually faster) and `SubprocVecEnv`
-    # env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
-
-    eval_callback = EvalCallback(vec_env, best_model_save_path="./logs/", verbose=1,
-                                 log_path="./logs/", eval_freq=500, deterministic=True, render=False)
-
-    model = PPO("MlpPolicy", vec_env, verbose=1)
-    model.learn(total_timesteps=2e10,
-                callback=eval_callback, progress_bar=True)
-
-    frame_list = []
-    obs = vec_env.reset()
-    for _ in range(1000):
-        action, _states = model.predict(obs)
-        obs, rewards, dones, info = vec_env.step(action)
-        # vec_env.render()
-        img = Image.fromarray(vec_env.render())
-        frame_list.append(img)
-
-    frame_list[0].save("moonlanding.gif", save_all=True,
-                    append_images=frame_list[1:], duration=3, loop=0)
+    exenv = Expenv("CartPole-v1", 10)
+    # exenv.train()
+    exenv.test()
 
 # ===========
 
