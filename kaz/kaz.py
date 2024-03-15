@@ -144,7 +144,7 @@ if __name__ == "__main__":
     env_kwargs = dict(max_cycles=100, max_zombies=4, vector_state=True)
 
     # Train a model
-    train(env_fn, steps=2e10, seed=0, **env_kwargs)
+    train(env_fn, steps=2e10, num_cpu=10, seed=0, **env_kwargs)
 
     # Evaluate 10 games (takes ~10 seconds on a laptop CPU)
     # eval(env_fn, num_games=10, render_mode="rgb_array", **env_kwargs)
