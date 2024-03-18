@@ -1,73 +1,34 @@
-# import functools
-# from absl import app
-# from absl import flags
-# from dm_control.locomotion import soccer
-# from dm_control import viewer
-# from tf_agents.policies import random_tf_policy
-# import numpy as np
+import numpy
+import json
+import matplotlib.pyplot as plt
+import csv
 
+data1 = []
+data2 = []
+data3 = []
+f = open('data.csv')
+csvreader = csv.reader(f, delimiter=";")
 
-# FLAGS = flags.FLAGS
+rows = []
+for row in csvreader:
+    data1 += [float(row[0])]
+    data2 += [float(row[1])]
+    data3 += [float(row[2])]
 
-# flags.DEFINE_enum("walker_type", "BOXHEAD", ["BOXHEAD", "ANT", "HUMANOID"],
-#                   "The type of walker to explore with.")
-# flags.DEFINE_bool(
-#     "enable_field_box", True,
-#     "If `True`, enable physical bounding box enclosing the ball"
-#     " (but not the players).")
-# flags.DEFINE_bool("disable_walker_contacts", False,
-#                   "If `True`, disable walker-walker contacts.")
-# flags.DEFINE_bool(
-#     "terminate_on_goal", False,
-#     "If `True`, the episode terminates upon a goal being scored.")
+x = [i+1 for i in range(0, len(data1))]
 
+markers = ["v", "o", "x", "s", "*", ".", "+", "s", "d"]
+scales = [20, 70, 20, 20, 70, 20]
 
-# def main(argv):
+plt.plot(x, data1, label="NTS")
+plt.plot(x, data2, label="FTS")
+plt.plot(x, data3, label="PTS")
 
-#     if len(argv) > 1:
-#         raise app.UsageError("Too many command-line arguments.")
+plt.rcParams.update({'font.size': 20})
 
-#     env = soccer.load(team_size=2,
-#                       walker_type=soccer.WalkerType[FLAGS.walker_type],
-#                       disable_walker_contacts=FLAGS.disable_walker_contacts,
-#                       enable_field_box=FLAGS.enable_field_box,
-#                       keep_aspect_ratio=True,
-#                       terminate_on_goal=FLAGS.terminate_on_goal)
-
-#     action_spec = env.action_spec()
-
-#     # Define a uniform random policy.
-#     def random_policy(time_step):
-#       del time_step  # Unused.
-#       return np.random.uniform(low=action_spec.minimum,
-#                                high=action_spec.maximum,
-#                                size=action_spec.shape)
-
-#     # random_policy = random_tf_policy.RandomTFPolicy(env.time_step_spec(),
-#     #                                                 env.action_spec())
-
-#     viewer.launch(environment_loader=env, policy=random_policy)
-
-
-# if __name__ == "__main__":
-#     app.run(main)
-
-from dm_control import suite
-from dm_control import viewer
-import numpy as np
-
-env = suite.load(domain_name="humanoid", task_name="stand")
-action_spec = env.action_spec()
-
-# Define a uniform random policy.
-
-
-def random_policy(time_step):
-    del time_step  # Unused.
-    return np.random.uniform(low=action_spec.minimum,
-                             high=action_spec.maximum,
-                             size=action_spec.shape)
-
-
-# Launch the viewer application.
-viewer.launch(env, policy=random_policy)
+# plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+plt.legend(bbox_to_anchor=(0.95, 0.4), loc='upper right')
+plt.tight_layout()
+plt.xlabel("Training iteration", size=15)
+plt.ylabel("Mean episode reward", size=15)
+plt.show()

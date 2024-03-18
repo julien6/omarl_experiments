@@ -47,19 +47,8 @@ A typical workflow would consist in:
 
 ```pip install -e .```
 
-## Tutorial: Predator-prey with communication
 
-Source link: https://pettingzoo.farama.org/environments/mpe/simple_world_comm/
-
-![alt text](https://github.com/julien6/omarl_experiments/blob/main/images/mpe_simple_world_comm.gif?raw=true)
-
-Simple World Comm is a predator-prey environment. Good agents (green) are faster and receive a negative reward for being hit by adversaries (red) (-10 for each collision). Adversaries are slower and are rewarded for hitting good agents (+10 for each collision). Obstacles (large black circles) block the way. By default, there is 1 good agent, 3 adversaries and 2 obstacles.
-
-Additionally there is food (small blue balls) that the good agents are rewarded for being near, there are ‘forests’ that hide agents inside from being seen, and there is a ‘leader adversary’ that can see the agents at all times and can communicate with the other adversaries to help coordinate the chase. By default, there are 2 good agents, 3 adversaries, 1 obstacles, 2 foods, and 2 forests.
-
-In particular, the good agents reward, is -5 for every collision with an adversary, -2 x bound by the bound function described in simple_tag, +2 for every collision with a food, and -0.05 x minimum distance to any food. The adversarial agents are rewarded +5 for collisions and -0.1 x minimum distance to a good agent.
-
-### PRAHOM Gym-wrapper use:
+## PRAHOM Gym-wrapper use:
 
 Basic example
 
@@ -121,8 +110,6 @@ training_specs = {
 
 ***Note: Learning should converge faster as search space is reduced***
 
-TODO: showing the learning curve with and without OMARL, time to converge, stability...
-
 Finally, we can extract the organizational specifications out of the resulting
 
 ```python
@@ -166,12 +153,63 @@ Printing the "trained_specs"
 }
 ```
 
+_______
+_______
+
+
+## Tutorial: Predator-prey with communication
+
+Source link: https://pettingzoo.farama.org/environments/mpe/simple_world_comm/
+
+![alt text](https://github.com/julien6/omarl_experiments/blob/main/images/mpe_simple_world_comm.gif?raw=true)
+
+Simple World Comm is a predator-prey environment. Good agents (green) are faster and receive a negative reward for being hit by adversaries (red) (-10 for each collision). Adversaries are slower and are rewarded for hitting good agents (+10 for each collision). Obstacles (large black circles) block the way. By default, there is 1 good agent, 3 adversaries and 2 obstacles.
+
+Additionally there is food (small blue balls) that the good agents are rewarded for being near, there are ‘forests’ that hide agents inside from being seen, and there is a ‘leader adversary’ that can see the agents at all times and can communicate with the other adversaries to help coordinate the chase. By default, there are 2 good agents, 3 adversaries, 1 obstacles, 2 foods, and 2 forests.
+
+In particular, the good agents reward, is -5 for every collision with an adversary, -2 x bound by the bound function described in simple_tag, +2 for every collision with a food, and -0.05 x minimum distance to any food. The adversarial agents are rewarded +5 for collisions and -0.1 x minimum distance to a good agent.
 
 _______
 _______
+
 
 ## Tutorial: Knights Archers Zombies
 
+Source link: https://pettingzoo.farama.org/environments/butterfly/knights_archers_zombies/
+
 ![alt text](https://github.com/julien6/omarl_experiments/blob/main/images/butterfly_knights_archers_zombies.gif?raw=true)
 
-TODO...
+Knights Archers Zombies (KAZ) is a two-dimensional game where zombies walk from the top border of the screen down to the bottom border in unpredictable paths. The agents you control are knights and archers (default 2 knights and 2 archers) that are initially positioned at the bottom border of the screen. Each agent can rotate clockwise or counter-clockwise and move forward or backward. Each agent can also attack to kill zombies. When a knight attacks, it swings a mace in an arc in front of its current heading direction. When an archer attacks, it fires an arrow in a straight line in the direction of the archer’s heading. The game ends when all agents die (collide with a zombie) or a zombie reaches the bottom screen border. A knight is rewarded 1 point when its mace hits and kills a zombie. An archer is rewarded 1 point when one of their arrows hits and kills a zombie. There are two possible observation types for this environment, vectorized and image-based.
+
+_______
+_______
+
+## Tutorial: Pistonball
+
+https://pettingzoo.farama.org/environments/butterfly/pistonball/
+
+![alt text](https://pettingzoo.farama.org/_images/butterfly_pistonball.gif)
+
+Pistonball is a simple physics based cooperative game where the goal is to move the ball to the left wall of the game border by activating the vertically moving pistons. Each piston agent’s observation is an RGB image of the two pistons (or the wall) next to the agent and the space above them. Every piston can be acted on in any given time. The action space in discrete mode is 0 to move down, 1 to stay still, and 2 to move up. In continuous mode, the value in the range [-1, 1] is proportional to the amount that the pistons are raised or lowered by. Continuous actions are scaled by a factor of 4, so that in both the discrete and continuous action space, the action 1 will move a piston 4 pixels up, and -1 will move pistons 4 pixels down.
+
+Accordingly, pistons must learn highly coordinated emergent behavior to achieve an optimal policy for the environment. Each agent gets a reward that is a combination of how much the ball moved left overall and how much the ball moved left if it was close to the piston (i.e. movement the piston contributed to). A piston is considered close to the ball if it is directly below any part of the ball. Balancing the ratio between these local and global rewards appears to be critical to learning this environment, and as such is an environment parameter. The local reward applied is 0.5 times the change in the ball’s x-position. Additionally, the global reward is change in x-position divided by the starting position, times 100, plus the time_penalty (default -0.1). For each piston, the reward is local_ratio * local_reward + (1-local_ratio) * global_reward. The local reward is applied to pistons surrounding the ball while the global reward is provided to all pistons.
+
+Pistonball uses the chipmunk physics engine, and are thus the physics are about as realistic as in the game Angry Birds.
+
+_______
+_______
+
+## Tutorial: CybORG - Third CAGE Challenge
+
+https://github.com/cage-challenge/cage-challenge-3
+
+![alt text](https://raw.githubusercontent.com/cage-challenge/cage-challenge-3/main/images/scenario-map.png)
+
+The nation of Florin is conducting reconnaissance on the border with Guilder during a period of tension between the two nations. A set of autonomous aerial drones is used to support soldiers patrolling the border. These drones are designed to form an ad-hoc network, so that any data the soldiers need to transmit to one another can be relayed via the drones as shown in Figure. The drones spread out across the area of interest and aim to maintain sufficient proximity with soldiers in order to enable communications. Guilder is not expected to attempt to destroy the drones, as this would be interpreted as an act of aggression. However, Guilder has experience in conducting cyber operations against Florin, and they may attempt to use their cyber capability to interfere with the mission.
+
+Cyber Threat Intelligence reports indicate that Guilder may have installed hardware Trojans on the drones in the swarm, however the conditions for the activation of the Trojans are unknown. Once activated, these Trojans will deploy a worm that will attempt to compromise other drones in the swarm. This worm may either steal data on Florin’s troop movements, or introduce false information to mislead Florin command.
+
+You are a developer of autonomous defence systems. Following your success defending a Florin munitions factory against attack using autonomous agents (CAGE Challenges 1 and 2), you have been tasked with developing a multi-agent autonomous defence system for the drone support team. The drones are constantly moving, both to maintain the overall network and to track the movements of particular soldiers or vehicles. Communications between any two drones may drop out or be re-established at any time. A centralised approach to cyber defence will be difficult; instead, you will develop a decentralised defence system.
+
+Your primary goals are to defend the drone team such that (a) compromised drones are detected and then isolated or reclaimed, and (b) the flow of data between the soldiers using the network is maintained.
+
