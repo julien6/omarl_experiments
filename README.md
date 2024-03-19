@@ -54,7 +54,7 @@ Basic example
 
 ```python
 from pettingzoo.mpe import simple_world_comm_v3
-from omarl_experiments import PamidWrapper
+from omarl_experiments import PrahomWrapper
 
 env = simple_world_comm_v3.parallel_env(render_mode="human")
 
@@ -62,7 +62,7 @@ action_to_specs = ...
 training_specs = ...
 
 # wrapping the initial environment to use PRAHOM
-env = PamidWrapper(env, action_to_specs, training_specs, unknown_specs_inference=True, pca_output=True)
+env = PrahomWrapper(env, action_to_specs, training_specs, unknown_specs_inference=True, pca_output=True)
 
 observations, infos = env.reset()
 
@@ -175,9 +175,39 @@ _______
 </figure>
 
 
-## PRAHOM implementation details
+## PRAHOM details
 
+PRAHOM is a synthesis of two processes:
+ 1) Determining $\mathcal{M}OISE^+$ organizational specifications from joint-histories
+ 2) Constraining possible trained agents' policies according to given $\mathcal{M}OISE^+$ organizational specifications
 
+In both case, it relies on the relations between histories obtained after training and $\mathcal{M}OISE^+$ organizational specifications. Formally, we introduce the relation $rhos$ that associate some specific sub joint-histories to some organizational specifications:
+
+$rhos: \mathcal{P}(H_{joint}) \rightarrow OS$ 
+
+### Inferring organizational specifications
+
+Inferring organizational specifications from joint-histories obtained after training is indeed improving $rhos$
+
+In order to improve $rhos$, we do as follow:
+1) Optionally, some relation may already be known.
+2) Using the definitions of the organizational specifications regarding histories to determine roles, links, goals for each joint-history; and according to optional known relations in (1)
+    - Role: defined by stereotyped behavior
+    - Links: defined by impact on other agents whether in the future actions
+    - Goals: defined by limited number of similar state reached by agents before achieving the ultimate goal
+3) Using the inferred information from each joint-history to infer general organizational specifications such as Compatibilities, Mission plans, Permissions, Obligations...
+    - Compatibilities: defined if a same agent can adopt two different roles
+    - Mission plans: defined by the way goals are achieved to get the ultimate goal
+    - Permissions/Obligations: defined by the way (duration, frequency...) a role is associated to an agent
+
+### Constraining resulting joint-policies
+
+For each step, for each agent:
+
+1) Converting the given organizational specifications (intersected with current agent history) into authorized and forbidden (observation, action) couples
+    - Reusing the previously inferred $rhos$ relation
+2) MARL update the agent policy from non-constrained observation and action sets
+3) Update the history after chosen the next action to play
 _______
 
 
