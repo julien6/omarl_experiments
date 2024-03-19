@@ -15,11 +15,13 @@ import time
 import supersuit as ss
 from stable_baselines3 import PPO
 from stable_baselines3.ppo import CnnPolicy, MlpPolicy
+from stable_baselines3.common.callbacks import EvalCallback
+from PIL import Image
 
 from pettingzoo.butterfly import knights_archers_zombies_v10
 
 
-def train(env_fn, steps: int = 10_000, seed: int | None = 0, **env_kwargs):
+def train(env_fn, steps: int = 10_000, num_cpu: int = 1, seed: int | None = 0, **env_kwargs):
     # Train a single model to play as each agent in an AEC environment
     env = env_fn.parallel_env(**env_kwargs)
 
@@ -41,7 +43,7 @@ def train(env_fn, steps: int = 10_000, seed: int | None = 0, **env_kwargs):
 
     env = ss.pettingzoo_env_to_vec_env_v1(env)
     env = ss.concat_vec_envs_v1(
-        env, 8, num_cpus=1, base_class="stable_baselines3")
+        env, num_vec_envs=num_cpu, num_cpus=num_cpu, base_class="stable_baselines3")
 
     # Use a CNN policy if the observation space is visual
     model = PPO(
@@ -51,7 +53,10 @@ def train(env_fn, steps: int = 10_000, seed: int | None = 0, **env_kwargs):
         batch_size=256,
     )
 
-    model.learn(total_timesteps=steps)
+    eval_callback = EvalCallback(env, best_model_save_path="./logs/", verbose=1,
+                                 log_path="./logs/", eval_freq=500, deterministic=True, render=False)
+
+    model.learn(total_timesteps=steps, callback=eval_callback)
 
     model.save(
         f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
@@ -89,6 +94,8 @@ def eval(env_fn, num_games: int = 100, render_mode: str | None = None, **env_kwa
 
     model = PPO.load(latest_policy)
 
+    frame_list = []
+    j = 0
     rewards = {agent: 0 for agent in env.possible_agents}
 
     # Note: we evaluate here using an AEC environments, to allow for easy A/B testing against random policies
@@ -111,7 +118,14 @@ def eval(env_fn, num_games: int = 100, render_mode: str | None = None, **env_kwa
                 else:
                     act = model.predict(obs, deterministic=True)[0]
             env.step(act)
+            j += 1
+            if j % (len(env.possible_agents) + 1) == 0:
+                img = Image.fromarray(env.render())
+                frame_list.append(img)
     env.close()
+
+    frame_list[0].save(f"{str(env.metadata['name'])}.gif", save_all=True,
+                       append_images=frame_list[1:], duration=3, loop=0)
 
     avg_reward = sum(rewards.values()) / len(rewards.values())
     avg_reward_per_agent = {
@@ -129,11 +143,11 @@ if __name__ == "__main__":
     # Set vector_state to false in order to use visual observations (significantly longer training time)
     env_kwargs = dict(max_cycles=100, max_zombies=4, vector_state=True)
 
-    # Train a model (takes ~5 minutes on a laptop CPU)
-    train(env_fn, steps=81_920, seed=0, **env_kwargs)
+    # Train a model
+    train(env_fn, steps=2e10, num_cpu=10, seed=0, **env_kwargs)
 
     # Evaluate 10 games (takes ~10 seconds on a laptop CPU)
-    eval(env_fn, num_games=10, render_mode=None, **env_kwargs)
+    # eval(env_fn, num_games=10, render_mode="rgb_array", **env_kwargs)
 
-    # Watch 2 games (takes ~10 seconds on a laptop CPU)
+    # # Watch 2 games (takes ~10 seconds on a laptop CPU)
     # eval(env_fn, num_games=2, render_mode="human", **env_kwargs)
