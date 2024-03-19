@@ -205,11 +205,26 @@ https://github.com/cage-challenge/cage-challenge-3
 
 ![alt text](https://raw.githubusercontent.com/cage-challenge/cage-challenge-3/main/images/scenario-map.png)
 
-The nation of Florin is conducting reconnaissance on the border with Guilder during a period of tension between the two nations. A set of autonomous aerial drones is used to support soldiers patrolling the border. These drones are designed to form an ad-hoc network, so that any data the soldiers need to transmit to one another can be relayed via the drones as shown in Figure. The drones spread out across the area of interest and aim to maintain sufficient proximity with soldiers in order to enable communications. Guilder is not expected to attempt to destroy the drones, as this would be interpreted as an act of aggression. However, Guilder has experience in conducting cyber operations against Florin, and they may attempt to use their cyber capability to interfere with the mission.
+"The nation of Florin is conducting reconnaissance on the border with Guilder during a period of tension between the two nations. A set of autonomous aerial drones is used to support soldiers patrolling the border. These drones are designed to form an ad-hoc network, so that any data the soldiers need to transmit to one another can be relayed via the drones as shown in Figure. The drones spread out across the area of interest and aim to maintain sufficient proximity with soldiers in order to enable communications. Guilder is not expected to attempt to destroy the drones, as this would be interpreted as an act of aggression. However, Guilder has experience in conducting cyber operations against Florin, and they may attempt to use their cyber capability to interfere with the mission.
 
 Cyber Threat Intelligence reports indicate that Guilder may have installed hardware Trojans on the drones in the swarm, however the conditions for the activation of the Trojans are unknown. Once activated, these Trojans will deploy a worm that will attempt to compromise other drones in the swarm. This worm may either steal data on Florin’s troop movements, or introduce false information to mislead Florin command.
 
 You are a developer of autonomous defence systems. Following your success defending a Florin munitions factory against attack using autonomous agents (CAGE Challenges 1 and 2), you have been tasked with developing a multi-agent autonomous defence system for the drone support team. The drones are constantly moving, both to maintain the overall network and to track the movements of particular soldiers or vehicles. Communications between any two drones may drop out or be re-established at any time. A centralised approach to cyber defence will be difficult; instead, you will develop a decentralised defence system.
 
-Your primary goals are to defend the drone team such that (a) compromised drones are detected and then isolated or reclaimed, and (b) the flow of data between the soldiers using the network is maintained.
+Your primary goals are to defend the drone team such that (a) compromised drones are detected and then isolated or reclaimed, and (b) the flow of data between the soldiers using the network is maintained."
 
+_______
+_______
+
+
+<figure>
+    <img src="./assets/images/prahom_learning_curve.png"
+         alt="PRAHOM Learning curve">
+    <figcaption>Learning curve for the NTS, FTS, and PTS cases over 1000 training iterations in the Pistonball environment</figcaption>
+</figure>
+
+<figure>
+    <img src="./assets/images/prahom_pca_analysis.png"
+         alt="PRAHOM Learning curve">
+    <figcaption>Principal Component Analysis of the trained agents' histories in the Pistonball environment in the NTS</figcaption>
+</figure>
