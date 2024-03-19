@@ -153,15 +153,39 @@ Printing the "trained_specs"
 }
 ```
 
+
 _______
 _______
 
 
-## Tutorial: Predator-prey with communication
+## General results
+
+<figure>
+    <img src="./assets/images/prahom_learning_curve.png"
+         alt="PRAHOM Learning curve">
+    <figcaption>Learning curve for the NTS, FTS, and PTS cases over 1000 training iterations in the Pistonball environment*</figcaption>
+</figure>
+
+<br>
+
+<figure>
+    <img src="./assets/images/prahom_pca_analysis.png"
+         alt="PRAHOM Learning curve">
+    <figcaption>Principal Component Analysis of the trained agents' histories in the Pistonball environment in the NTS</figcaption>
+</figure>
+
+
+## PRAHOM implementation details
+
+
+_______
+
+
+## Predator-prey with communication
 
 Source link: https://pettingzoo.farama.org/environments/mpe/simple_world_comm/
 
-![alt text](https://github.com/julien6/omarl_experiments/blob/main/images/mpe_simple_world_comm.gif?raw=true)
+![alt text](https://pettingzoo.farama.org/_images/mpe_simple_world_comm.gif)
 
 Simple World Comm is a predator-prey environment. Good agents (green) are faster and receive a negative reward for being hit by adversaries (red) (-10 for each collision). Adversaries are slower and are rewarded for hitting good agents (+10 for each collision). Obstacles (large black circles) block the way. By default, there is 1 good agent, 3 adversaries and 2 obstacles.
 
@@ -170,21 +194,20 @@ Additionally there is food (small blue balls) that the good agents are rewarded 
 In particular, the good agents reward, is -5 for every collision with an adversary, -2 x bound by the bound function described in simple_tag, +2 for every collision with a food, and -0.05 x minimum distance to any food. The adversarial agents are rewarded +5 for collisions and -0.1 x minimum distance to a good agent.
 
 _______
-_______
 
 
-## Tutorial: Knights Archers Zombies
+## Knights Archers Zombies
 
 Source link: https://pettingzoo.farama.org/environments/butterfly/knights_archers_zombies/
 
-![alt text](https://github.com/julien6/omarl_experiments/blob/main/images/butterfly_knights_archers_zombies.gif?raw=true)
+![alt text](https://pettingzoo.farama.org/_images/butterfly_knights_archers_zombies.gif)
 
 Knights Archers Zombies (KAZ) is a two-dimensional game where zombies walk from the top border of the screen down to the bottom border in unpredictable paths. The agents you control are knights and archers (default 2 knights and 2 archers) that are initially positioned at the bottom border of the screen. Each agent can rotate clockwise or counter-clockwise and move forward or backward. Each agent can also attack to kill zombies. When a knight attacks, it swings a mace in an arc in front of its current heading direction. When an archer attacks, it fires an arrow in a straight line in the direction of the archer’s heading. The game ends when all agents die (collide with a zombie) or a zombie reaches the bottom screen border. A knight is rewarded 1 point when its mace hits and kills a zombie. An archer is rewarded 1 point when one of their arrows hits and kills a zombie. There are two possible observation types for this environment, vectorized and image-based.
 
 _______
-_______
 
-## Tutorial: Pistonball
+
+## Pistonball
 
 https://pettingzoo.farama.org/environments/butterfly/pistonball/
 
@@ -197,9 +220,9 @@ Accordingly, pistons must learn highly coordinated emergent behavior to achieve 
 Pistonball uses the chipmunk physics engine, and are thus the physics are about as realistic as in the game Angry Birds.
 
 _______
-_______
 
-## Tutorial: CybORG - Third CAGE Challenge
+
+## CybORG - Third CAGE Challenge
 
 https://github.com/cage-challenge/cage-challenge-3
 
@@ -212,19 +235,3 @@ Cyber Threat Intelligence reports indicate that Guilder may have installed hardw
 You are a developer of autonomous defence systems. Following your success defending a Florin munitions factory against attack using autonomous agents (CAGE Challenges 1 and 2), you have been tasked with developing a multi-agent autonomous defence system for the drone support team. The drones are constantly moving, both to maintain the overall network and to track the movements of particular soldiers or vehicles. Communications between any two drones may drop out or be re-established at any time. A centralised approach to cyber defence will be difficult; instead, you will develop a decentralised defence system.
 
 Your primary goals are to defend the drone team such that (a) compromised drones are detected and then isolated or reclaimed, and (b) the flow of data between the soldiers using the network is maintained."
-
-_______
-_______
-
-
-<figure>
-    <img src="./assets/images/prahom_learning_curve.png"
-         alt="PRAHOM Learning curve">
-    <figcaption>Learning curve for the NTS, FTS, and PTS cases over 1000 training iterations in the Pistonball environment</figcaption>
-</figure>
-
-<figure>
-    <img src="./assets/images/prahom_pca_analysis.png"
-         alt="PRAHOM Learning curve">
-    <figcaption>Principal Component Analysis of the trained agents' histories in the Pistonball environment in the NTS</figcaption>
-</figure>
