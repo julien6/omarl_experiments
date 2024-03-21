@@ -3,6 +3,7 @@ from typing import List
 import numpy
 import json
 import matplotlib.pyplot as plt
+import matplotlib
 import csv
 import numpy as np
 
@@ -46,6 +47,7 @@ def longest_common_subsequence(s1, s2):
 
     return common_sequence[::-1]
 
+
 def longest_common_subsequence_multiple(sequences):
     if not sequences:
         return []
@@ -56,6 +58,7 @@ def longest_common_subsequence_multiple(sequences):
 
     return common_sequence
 
+
 def find_two_subsequences_with_best_lcs(sequences):
 
     max_lcs = []
@@ -64,13 +67,14 @@ def find_two_subsequences_with_best_lcs(sequences):
     for i, s1 in enumerate(sequences):
         for j, s2 in enumerate(sequences):
             if i != j:
-                lcs = longest_common_subsequence(s1,s2)
-                if(len(lcs) > len(max_lcs)):
+                lcs = longest_common_subsequence(s1, s2)
+                if (len(lcs) > len(max_lcs)):
                     max_lcs = lcs
                     seq1 = s1
                     seq2 = s2
 
     return max_lcs, seq1, seq2
+
 
 def find_subsequences_with_best_lcs(sequences: List[List[int]]):
     seqs = copy.copy(sequences)
@@ -84,25 +88,28 @@ def find_subsequences_with_best_lcs(sequences: List[List[int]]):
         seqs.append(lcs)
     return lcs, seq1, seq2
 
+
 def sequence_dist(seq1, seq2):
     lcs = longest_common_subsequence(seq1, seq2)
     return 1 - (2 * len(lcs) / (len(seq1)+len(seq2)))
 
-actions = {'piston_0': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_1': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_2': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 0], 'piston_3': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 0], 'piston_4': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, -1, 0], 'piston_5': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, 0], 'piston_6': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, 0], 'piston_7': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_8': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_9': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_10': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_11': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_12': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_13': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_14': [-1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_15': [-1, -1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_16': [-1, -1, -1, -1, -1, -1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_17': [-1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_18': [1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_19': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]}
+
+actions = {'piston_0': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_1': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_2': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 0], 'piston_3': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 0], 'piston_4': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, -1, 0], 'piston_5': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, 0], 'piston_6': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, 0], 'piston_7': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_8': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_9': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 1, -1, -1, -1, 0], 'piston_10': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_11': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_12': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_13': [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_14': [-1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_15': [-1, -1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_16': [-1, -1, -1, -1, -1, -1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_17': [-1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_18': [1, -1, -1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0], 'piston_19': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]}
 
 acts = [a for p_name, a in actions.items()]
 
-s1 = [1,2,4,5,6,0,4,0,1,0,0]
-s2 = [1,2,3,4,5,6,0,0,0,0,0]
-s3 = [1,8,2,3,6,4,1,5,0,0,0]
-s4 = [0,1,4,1,2,3,6,4,5,1,9]
-s5 = [5,4,3,2,1,0,1,2,3,4,5]
-s6 = [5,0,0,4,2,2,1,3,7,4,2]
+s1 = [1, 2, 4, 5, 6, 0, 4, 0, 1, 0, 0]
+s2 = [1, 2, 3, 4, 5, 6, 0, 0, 0, 0, 0]
+s3 = [1, 8, 2, 3, 6, 4, 1, 5, 0, 0, 0]
+s4 = [0, 1, 4, 1, 2, 3, 6, 4, 5, 1, 9]
+s5 = [5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5]
+s6 = [5, 0, 0, 4, 2, 2, 1, 3, 7, 4, 2]
 
 # Matrice de similarité
 
-# sequences = acts
-sequences = [s1, s2, s3, s4, s5, s6, s6]
+sequences = acts
+# sequences = [s1, s2, s3, s4, s5, s6, s6]
 # result = longest_common_subsequence_multiple(sequences)
 # result, s1, s2 = find_two_subsequences_with_best_lcs(sequences)
 # print("La sous-séquence commune la plus grande est :", result, " pour les sequences: ", s1, " et ", s2)
@@ -114,10 +121,11 @@ for i, seq1 in enumerate(sequences):
 
 distance_matrix = np.array(distance_matrix)
 
-print(distance_matrix)
+# print(distance_matrix)
 
 # Calcul du clustering hiérarchique avec la méthode de liaison complète
 Z = linkage(distance_matrix, method='complete')
+"""
 
 print(Z)
 
@@ -127,4 +135,50 @@ dendrogram(Z)#, labels=["s1", "s2", "s3", "s4", "s5", "s6"])
 plt.title('Dendrogramme')
 plt.xlabel('Index des échantillons')
 plt.ylabel('Distance')
+plt.show()
+"""
+
+# Z = np.array([[2,  7,  0,  2],
+#               [0,  9,  0,  2],
+#               [1,  6,  0,  2],
+#               [5, 10,  0,  3],
+#               [11, 12,  0,  4],
+#               [4,  8,  0,  2],
+#               [14, 15,  0,  6],
+#               [13, 16,  0,  9],
+#               [3, 17,  1, 10]], dtype=float)
+
+Z[:, 2] = np.arange(1., len(Z)+1)
+
+# labels = [str(len(Z)+1+ind)+'='+str(Z[ind, 0].astype(int))+'+' +
+#           str(Z[ind, 1].astype(int)) for ind in range(len(Z))]
+
+labels = []
+leaves_seqs = [str(x) for x in copy.copy(sequences)]
+for ind in range(len(Z)):
+    seq1 = sequences[Z[ind, 0].astype(int)]
+    seq2 = sequences[Z[ind, 1].astype(int)]
+    lcs = longest_common_subsequence(seq1, seq2)
+    labels.append(str(len(Z)+1+ind)+'=lcs('+str(Z[ind, 0].astype(int))+',' +
+                  str(Z[ind, 1].astype(int))+')=' + str(lcs) + '\ndist=' + str(sequence_dist(seq1, seq2)))
+    sequences.append(lcs)
+
+fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+dn = dendrogram(Z, ax=ax, labels = leaves_seqs)
+ii = np.argsort(np.array(dn['dcoord'])[:, 1])
+for j, (icoord, dcoord) in enumerate(zip(dn['icoord'], dn['dcoord'])):
+    x = 0.5 * sum(icoord[1:3])
+    y = dcoord[1]
+    ind = np.nonzero(ii == j)[0][0]
+    ax.annotate(labels[ind], (x, y), va='top', ha='center')
+
+SMALL_SIZE = 8
+matplotlib.rc('font', size=SMALL_SIZE)
+matplotlib.rc('axes', titlesize=SMALL_SIZE)
+matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+
+plt.xticks(rotation=90, ha='right')
+plt.tight_layout()
+plt.savefig('./tmp.png')
 plt.show()
