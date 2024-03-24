@@ -1,0 +1,6 @@
+matplotlib
+SuperSuit
+numpy
+pettingzoo[classic,butterfly]
+stable-baselines3
+torch

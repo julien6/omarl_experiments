@@ -7,6 +7,10 @@ envs/pbl/pistonball2/ray_results/**
 envs/kaz/python-envs/**
 envs/kaz/ray_results/**
 
+envs/mcy/python-envs/**
+envs/mcy/logs/**
+envs/mcy/ray_results/**
+
 envs/ppy/python-envs/**
 envs/ppy/ray_results/**
 
