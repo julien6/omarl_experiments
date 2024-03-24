@@ -7,6 +7,6 @@
 #OAR --project pr-ai4cmas
 #OAR -p gpumodel='V100'
 
-cd /bettik/soulej/omarl_experiments/
+cd /bettik/soulej/omarl_experiments/envs/mcy
 source ./python-envs/mcy/bin/activate
 python3 mcy_train_test.py
