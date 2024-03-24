@@ -16,3 +16,5 @@ envs/ppy/ray_results/**
 
 envs/cyb/python-envs/**
 envs/cyb/ray_results/**
+
+./**/*.pyc

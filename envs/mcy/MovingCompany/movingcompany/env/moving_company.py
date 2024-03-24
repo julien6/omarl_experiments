@@ -12,11 +12,11 @@ from pettingzoo.utils.conversions import aec_to_parallel
 from pprint import pprint
 from pettingzoo.utils.conversions import parallel_wrapper_fn
 
-from pathlib import Path
+# from pathlib import Path
+# path_root = Path(__file__).parents[2]
+# sys.path.append(str(path_root))
 
-path_root = Path(__file__).parents[2]
-sys.path.append(str(path_root))
-from .renderer import GridRenderer
+from MovingCompany.movingcompany.env.renderer import GridRenderer
 
 
 FPS = 20

@@ -16,10 +16,10 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.callbacks import CheckpointCallback
 from PIL import Image
 
-from pathlib import Path
-path_root = Path(__file__).parents[2]
-sys.path.append(str(path_root))
-from misc.MovingCompany.movingcompany import moving_company_v0
+# from pathlib import Path
+# path_root = Path(__file__).parents[2]
+# sys.path.append(str(path_root))
+from MovingCompany.movingcompany import moving_company_v0
 
 
 class TrainTestManager:
@@ -94,8 +94,6 @@ class TrainTestManager:
             for agent in self.eval_env.agent_iter():
                 obs, rew, done, _, info = self.eval_env.last()
 
-                print(obs)
-
                 if manual_policy:
                     act = perfect_policy.pop(0) if len(
                         perfect_policy) > 0 else None
@@ -107,7 +105,6 @@ class TrainTestManager:
 
                 i += 1
                 if i % (len(self.eval_env.possible_agents)+1) == 0:
-                    print(rew)
                     total_reward = rew
                     img = Image.fromarray(self.eval_env.render())
                     frame_list.append(img)
@@ -149,7 +146,7 @@ def main():
     if mode == "train":
         exenv.train()
     elif mode == "test":
-        exenv.test()
+        exenv.test(manual_policy=True)
 
 
 if __name__ == "__main__":
