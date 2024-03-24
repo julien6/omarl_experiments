@@ -85,7 +85,7 @@ class raw_env(AECEnv, EzPickle):
             render_mode=render_mode
         )
 
-        self.observation_spaces = {agent: MultiDiscrete([5] * 3**2, seed=self._seed) for agent in self.possible_agents}
+        self.observation_spaces = {agent: MultiDiscrete([6] * 3**2, seed=self._seed) for agent in self.possible_agents}
 
         self.action_spaces = {agent: Discrete(7, seed=self._seed) for agent in self.possible_agents}
 
@@ -241,8 +241,8 @@ class raw_env(AECEnv, EzPickle):
         # [ ][ ][ ]
         # [ ][X][ ]
         # [ ][ ][ ]
-        # Each cell has 5 possible states: Wall (0), Empty (1), Agent (2), Agent+Package (3), EmptyPackageZone (4), NonEmptyPackageZone (5)
-        return MultiDiscrete([5] * 3**2, seed=self._seed)
+        # Each cell has 6 possible states: Wall (0), Empty (1), Agent (2), Agent+Package (3), EmptyPackageZone (4), NonEmptyPackageZone (5)
+        return MultiDiscrete([6] * 3**2, seed=self._seed)
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):

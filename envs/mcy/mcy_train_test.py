@@ -33,8 +33,6 @@ class TrainTestManager:
 
         self.env = ss.pettingzoo_env_to_vec_env_v1(self.env)
 
-        print(self.env.action_space)
-        print(self.env.observation_space)
         self.env = ss.concat_vec_envs_v1(
             self.env, num_vec_envs=self.num_cpu, num_cpus=self.num_cpu, base_class='stable_baselines3')
 
