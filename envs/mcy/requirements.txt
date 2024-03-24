@@ -4,3 +4,4 @@ numpy
 pettingzoo[classic,butterfly]
 stable-baselines3
 torch
+tensorboard
