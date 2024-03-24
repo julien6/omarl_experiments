@@ -65,14 +65,14 @@ class TrainTestManager:
                              callback=self.eval_callback, progress_bar=True)
             # self.model.save("policy")
 
-    def test(self, manual_policy=False):
+    def test(self):
 
         print("Testing")
 
         self.eval_env.reset(seed=42)
 
         model = PPO.load(path="./logs/best_model.zip",
-                            tensorboard_log="./tensorboard/")
+                         tensorboard_log="./tensorboard/")
 
         total_reward = 0
         frame_list = []
@@ -88,10 +88,15 @@ class TrainTestManager:
         for i in range(NUM_RESETS):
             self.eval_env.reset(seed=42)
             for agent in self.eval_env.agent_iter():
-                obs, rew, done, _, info = self.eval_env.last()
+                obs, rew, done, trunc, info = self.eval_env.last()
 
                 act = model.predict(obs, deterministic=True)[
-                    0] if not done else None
+                    0] if not (done or trunc) else None
+                # act = self.eval_env.action_space(
+                #     agent).sample(mask=info["action_masks"])
+
+                if trunc or done:
+                    act = None
 
                 self.eval_env.step(act)
 
@@ -138,7 +143,7 @@ def main():
     if mode == "train":
         exenv.train()
     elif mode == "test":
-        exenv.test(manual_policy=False)
+        exenv.test()
 
 
 if __name__ == "__main__":

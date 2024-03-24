@@ -168,7 +168,7 @@ class raw_env(AECEnv, EzPickle):
 
     def generate_action_masks(self, agent_name: str):
 
-        action_mask = np.zeros(self.action_space(agent_name).n, dtype=np.int64)
+        action_mask = np.zeros(self.action_space(agent_name).n, dtype=np.int8)
 
         for action in range(self.action_space(agent_name).n):
 
