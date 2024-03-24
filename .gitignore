@@ -18,3 +18,10 @@ envs/cyb/python-envs/**
 envs/cyb/ray_results/**
 
 ./**/*.pyc
+
+./**/logs/**
+./**/tensorboard/**
+
+./**/__pycache__/**
+envs/**/__pycache__/**
+envs/**/.pyc

@@ -32,8 +32,11 @@ class TrainTestManager:
             os.makedirs("./logs")
 
         self.env = ss.pettingzoo_env_to_vec_env_v1(self.env)
-        # self.env = ss.concat_vec_envs_v1(
-        #     self.env, num_vec_envs=8, num_cpus=4, base_class='stable_baselines3')
+
+        print(self.env.action_space)
+        print(self.env.observation_space)
+        self.env = ss.concat_vec_envs_v1(
+            self.env, num_vec_envs=self.num_cpu, num_cpus=self.num_cpu, base_class='stable_baselines3')
 
         self.eval_callback = EvalCallback(
             eval_env=self.env,

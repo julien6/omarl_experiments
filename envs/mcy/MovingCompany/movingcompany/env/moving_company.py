@@ -85,6 +85,11 @@ class raw_env(AECEnv, EzPickle):
             render_mode=render_mode
         )
 
+        self.observation_spaces = {agent: MultiDiscrete([5] * 3**2, seed=self._seed) for agent in self.possible_agents}
+
+        self.action_spaces = {agent: Discrete(7, seed=self._seed) for agent in self.possible_agents}
+
+
     def init_grid_environment(self, seed: int):
         self.grid = np.ones((self.size, self.size), dtype=np.int64)
         for i in range(0, self.size):
