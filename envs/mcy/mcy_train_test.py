@@ -58,7 +58,7 @@ class TrainTestManager:
 
         else:
             print("Resuming training")
-            self.model = PPO.load(path="./logs/best_model.zip",
+            self.model = PPO.load(path="./logs/best_model.zip", env=self.env,
                                   tensorboard_log="./tensorboard/")
 
             self.model.learn(total_timesteps=int(2e10),
