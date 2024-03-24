@@ -71,9 +71,8 @@ class TrainTestManager:
 
         self.eval_env.reset(seed=42)
 
-        if not manual_policy:
-            model = PPO.load(path="./logs/best_model.zip",
-                             tensorboard_log="./tensorboard/")
+        model = PPO.load(path="./logs/best_model.zip",
+                            tensorboard_log="./tensorboard/")
 
         total_reward = 0
         frame_list = []
@@ -91,12 +90,8 @@ class TrainTestManager:
             for agent in self.eval_env.agent_iter():
                 obs, rew, done, _, info = self.eval_env.last()
 
-                if manual_policy:
-                    act = perfect_policy.pop(0) if len(
-                        perfect_policy) > 0 else None
-                else:
-                    act = model.predict(obs, deterministic=True)[
-                        0] if not done else None
+                act = model.predict(obs, deterministic=True)[
+                    0] if not done else None
 
                 self.eval_env.step(act)
 
@@ -143,7 +138,7 @@ def main():
     if mode == "train":
         exenv.train()
     elif mode == "test":
-        exenv.test(manual_policy=True)
+        exenv.test(manual_policy=False)
 
 
 if __name__ == "__main__":
