@@ -11,11 +11,6 @@ from PIL import Image
 from pettingzoo.utils.conversions import aec_to_parallel
 from pprint import pprint
 from pettingzoo.utils.conversions import parallel_wrapper_fn
-
-# from pathlib import Path
-# path_root = Path(__file__).parents[2]
-# sys.path.append(str(path_root))
-
 from MovingCompany.movingcompany.env.renderer import GridRenderer
 
 

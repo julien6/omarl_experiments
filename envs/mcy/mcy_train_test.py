@@ -15,10 +15,6 @@ from stable_baselines3.common.vec_env import VecExtractDictObs, VecMonitor
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.callbacks import CheckpointCallback
 from PIL import Image
-
-# from pathlib import Path
-# path_root = Path(__file__).parents[2]
-# sys.path.append(str(path_root))
 from MovingCompany.movingcompany import moving_company_v0
 
 
@@ -36,8 +32,8 @@ class TrainTestManager:
             os.makedirs("./logs")
 
         self.env = ss.pettingzoo_env_to_vec_env_v1(self.env)
-        self.env = ss.concat_vec_envs_v1(
-            self.env, num_vec_envs=8, num_cpus=4, base_class='stable_baselines3')
+        # self.env = ss.concat_vec_envs_v1(
+        #     self.env, num_vec_envs=8, num_cpus=4, base_class='stable_baselines3')
 
         self.eval_callback = EvalCallback(
             eval_env=self.env,
@@ -50,7 +46,7 @@ class TrainTestManager:
 
             print("Initiating training")
 
-            self.model = PPO(policy=CnnPolicy,
+            self.model = PPO(policy=MlpPolicy,
                              env=self.env, verbose=1, tensorboard_log="./tensorboard/", gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
                              vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
 
