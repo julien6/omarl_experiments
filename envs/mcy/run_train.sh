@@ -9,4 +9,4 @@
 
 cd /bettik/soulej/omarl_experiments/envs/mcy
 source ./python-envs/mcy/bin/activate
-python3 mcy_train_test.py
+python3.9 mcy_train_test.py -mode train -num_cpu 8
