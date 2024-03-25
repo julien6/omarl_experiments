@@ -2,7 +2,7 @@
 import copy
 from typing import Any
 # from stable_baselines3.ppo import CnnPolicy, MlpPolicy
-from stable_baselines3 import DQN, PPO
+from stable_baselines3 import PPO, DQN
 import supersuit as ss
 import os
 import numpy as np
@@ -51,7 +51,7 @@ class TrainTestManager:
             # self.model = DQN(policy=MlpPolicy,
             #                  env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
-            self.model = DQN(policy="MlpPolicy",
+            self.model = PPO(policy="MlpPolicy",
                              env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
             # Almost infinite number of timesteps, but the training will converge at some point
@@ -61,7 +61,7 @@ class TrainTestManager:
 
         else:
             print("Resuming training")
-            self.model = DQN.load(path="./logs/best_model.zip", env=self.env,
+            self.model = PPO.load(path="./logs/best_model.zip", env=self.env,
                                   tensorboard_log="./tensorboard/")
 
             self.model.learn(total_timesteps=int(2e10),
@@ -74,7 +74,7 @@ class TrainTestManager:
 
         self.eval_env.reset(seed=42)
 
-        model = DQN.load(path="./logs/best_model.zip",
+        model = PPO.load(path="./logs/best_model.zip",
                          tensorboard_log="./tensorboard/")
 
         total_reward = 0
