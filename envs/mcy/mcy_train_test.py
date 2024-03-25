@@ -48,7 +48,7 @@ class TrainTestManager:
 
             print("Initiating training")
 
-            # self.model = PPO(policy=MlpPolicy,
+            # self.model = DQN(policy=MlpPolicy,
             #                  env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
             self.model = DQN(policy="MlpPolicy",
@@ -135,9 +135,9 @@ def main():
         num_cpu = int(args[3])
 
     train_env = moving_company_v0.parallel_env(
-        render_mode="grid", size=10, seed=42, max_cycles=120)
+        render_mode="grid", size=10, seed=42, max_cycles=21)
     eval_env = moving_company_v0.env(
-        render_mode="rgb_array", size=10, seed=42, max_cycles=120)
+        render_mode="rgb_array", size=10, seed=42, max_cycles=21)
 
     exenv = TrainTestManager(
         train_env=train_env,
