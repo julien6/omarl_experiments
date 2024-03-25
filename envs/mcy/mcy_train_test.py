@@ -135,8 +135,9 @@ def main():
         num_cpu = int(args[3])
 
     train_env = moving_company_v0.parallel_env(
-        render_mode="grid", size=10, seed=42)
-    eval_env = moving_company_v0.env(render_mode="rgb_array", size=10, seed=42)
+        render_mode="grid", size=10, seed=42, max_cycles=120)
+    eval_env = moving_company_v0.env(
+        render_mode="rgb_array", size=10, seed=42, max_cycles=120)
 
     exenv = TrainTestManager(
         train_env=train_env,
