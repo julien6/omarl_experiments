@@ -1,7 +1,7 @@
 
 import copy
 from typing import Any
-from stable_baselines3.ppo import CnnPolicy, MlpPolicy
+# from stable_baselines3.ppo import CnnPolicy, MlpPolicy
 from stable_baselines3 import DQN, PPO
 import supersuit as ss
 import os
@@ -16,6 +16,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.callbacks import CheckpointCallback
 from PIL import Image
 from MovingCompany.movingcompany import moving_company_v0
+import gymnasium as gym
 
 
 class TrainTestManager:
@@ -50,7 +51,7 @@ class TrainTestManager:
             # self.model = PPO(policy=MlpPolicy,
             #                  env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
-            self.model = DQN(policy=MlpPolicy,
+            self.model = DQN(policy="MlpPolicy",
                              env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
             # Almost infinite number of timesteps, but the training will converge at some point
