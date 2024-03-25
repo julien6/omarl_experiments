@@ -48,8 +48,7 @@ class TrainTestManager:
             print("Initiating training")
 
             self.model = PPO(policy=MlpPolicy,
-                             env=self.env, verbose=1, tensorboard_log="./tensorboard/", gamma=0.95, n_steps=256, ent_coef=0.0905168, learning_rate=0.00062211,
-                             vf_coef=0.042202, max_grad_norm=0.9, gae_lambda=0.99, n_epochs=5, clip_range=0.3, batch_size=256)
+                             env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
             # Almost infinite number of timesteps, but the training will converge at some point
             self.model.learn(total_timesteps=int(2e10),

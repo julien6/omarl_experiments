@@ -1,3 +1,6 @@
+ __pycache__/
+*.pyc
+
 envs/pbl/python-envs/**
 envs/pbl/ray_results/**
 
@@ -19,9 +22,14 @@ envs/cyb/ray_results/**
 
 ./**/*.pyc
 
-./**/logs/**
-./**/tensorboard/**
+envs/**/logs/**
+envs/**/tensorboard/**
 
 ./**/__pycache__/**
 envs/**/__pycache__/**
 envs/**/.pyc
+
+envs/**/__pycache__/*
+envs/**/*.pyc
+envs/**/*.zip
+envs/**/*.gif
