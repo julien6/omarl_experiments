@@ -59,7 +59,7 @@ class TrainTestManager:
                              callback=self.eval_callback, progress_bar=True)
             # self.model.save("policy")
 
-        else:
+        else:   
             print("Resuming training")
             self.model = PPO.load(path="./logs/best_model.zip", env=self.env,
                                   tensorboard_log="./tensorboard/")
