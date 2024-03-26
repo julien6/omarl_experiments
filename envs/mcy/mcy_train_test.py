@@ -1,7 +1,7 @@
 
 import copy
-from typing import Any
-# from stable_baselines3.ppo import CnnPolicy, MlpPolicy
+from typing import Any, Callable, Dict, Optional, Tuple, Union
+from stable_baselines3.ppo import CnnPolicy, MlpPolicy
 from stable_baselines3 import PPO, DQN
 import supersuit as ss
 import os
@@ -21,7 +21,7 @@ import gymnasium as gym
 
 class TrainTestManager:
 
-    def __init__(self, train_env: Any, eval_env: Any, num_cpu: int = 4) -> None:
+    def __init__(self, train_env: Any, eval_env: Any, num_cpu: int = 4, constrained_policy: Dict[int, int] = {}) -> None:
 
         self.eval_env = eval_env
         self.env = train_env
@@ -36,11 +36,60 @@ class TrainTestManager:
 
         self.env = ss.concat_vec_envs_v1(
             self.env, num_vec_envs=self.num_cpu, num_cpus=self.num_cpu, base_class='stable_baselines3')
-
+        
         self.eval_callback = EvalCallback(
             eval_env=self.env,
             best_model_save_path="./logs/",
             verbose=1, log_path="./logs/", eval_freq=200, deterministic=True, render=False)
+
+        self.constrained_policy = copy.deepcopy(MlpPolicy)
+
+        self.constrained_policy.predict = self.constrained_predict(copy.deepcopy(self.constrained_policy.predict))
+    
+
+    def constrained_predict(self, initial_predict: Callable, policy_constraints: Dict[str: Dict[int, int]] = None):
+        """
+        Create a constrained policy
+        TODO: Generate a class inheriting from the Policy parent class
+        """
+
+        def predict(
+            _self,
+            observation: Union[np.ndarray, Dict[str, np.ndarray]],
+            state: Optional[Tuple[np.ndarray, ...]] = None,
+            episode_start: Optional[np.ndarray] = None,
+            deterministic: bool = False,
+        ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
+
+            if policy_constraints is not None:
+
+                agents = self.eval_env.possible_agents
+                observation_space = self.eval_env.observation_space(agents[0])
+                num_envs = self.num_cpu
+
+                actions = [0] * (len(agents) + num_envs)
+                for env in range(0, num_envs):
+ 
+                    print(observation.shape)
+
+                # obs_list = []
+                    # for i, agent in enumerate(self.env.venv.par_env.possible_agents):
+                    #     if agent not in obs_dict:
+                    #         raise AssertionError(
+                    #             "environment has agent death. Not allowed for pettingzoo_env_to_vec_env_v1 unless black_death is True"
+                    #         )
+                    #     obs_list.append(obs_dict[agent])
+
+                # self.env.venv.vec_envs[0].par_env.observation_space(par_env.possible_agents[0])
+                # print(self.env.venv.observation_space)
+                # print(self.env.venv.vec_envs[0].par_env.possible_agents)
+
+                return actions, state
+            else:
+                return initial_predict(_self, observation, state, episode_start, deterministic)
+
+        return predict
+
 
     def train(self):
 
@@ -51,7 +100,7 @@ class TrainTestManager:
             # self.model = DQN(policy=MlpPolicy,
             #                  env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
-            self.model = PPO(policy="MlpPolicy",
+            self.model = PPO(policy=self.constrained_policy,
                              env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
             # Almost infinite number of timesteps, but the training will converge at some point
@@ -92,6 +141,10 @@ class TrainTestManager:
             self.eval_env.reset(seed=42)
             for agent in self.eval_env.agent_iter():
                 obs, rew, done, trunc, info = self.eval_env.last()
+
+                print("+"*30)
+                print(obs)
+                print("+"*30)
 
                 act = model.predict(obs, deterministic=True)[
                     0] if not (done or trunc) else None
