@@ -21,11 +21,13 @@ import gymnasium as gym
 
 class TrainTestManager:
 
-    def __init__(self, train_env: Any, eval_env: Any, num_cpu: int = 4, constrained_policy: Dict[int, int] = {}) -> None:
+    def __init__(self, train_env: Any, eval_env: Any, num_cpu: int = 4, policy_constraints: Dict[str, Dict[int, int]] = None) -> None:
 
         self.eval_env = eval_env
         self.env = train_env
         self.num_cpu = num_cpu
+
+        self.policy_constraints = policy_constraints
 
         if not os.path.exists("./tensorboard"):
             os.makedirs("./tensorboard")
@@ -36,7 +38,7 @@ class TrainTestManager:
 
         self.env = ss.concat_vec_envs_v1(
             self.env, num_vec_envs=self.num_cpu, num_cpus=self.num_cpu, base_class='stable_baselines3')
-        
+
         self.eval_callback = EvalCallback(
             eval_env=self.env,
             best_model_save_path="./logs/",
@@ -44,13 +46,13 @@ class TrainTestManager:
 
         self.constrained_policy = copy.deepcopy(MlpPolicy)
 
-        self.constrained_policy.predict = self.constrained_predict(copy.deepcopy(self.constrained_policy.predict))
-    
+        self.constrained_policy.predict = self.constrained_predict(
+            copy.deepcopy(self.constrained_policy.predict), policy_constraints=policy_constraints)
 
-    def constrained_predict(self, initial_predict: Callable, policy_constraints: Dict[str: Dict[int, int]] = None):
+    def constrained_predict(self, initial_predict: Callable, policy_constraints: Dict[str, Dict[int, int]] = None):
         """
         Create a constrained policy
-        TODO: Generate a class inheriting from the Policy parent class
+        TODO: Generate a class inheriting from the Policy parent class -> a wrapper class
         """
 
         def predict(
@@ -61,35 +63,36 @@ class TrainTestManager:
             deterministic: bool = False,
         ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
 
-            if policy_constraints is not None:
+            actions, state = initial_predict(
+                _self, observation, state, episode_start, deterministic)
 
-                agents = self.eval_env.possible_agents
-                observation_space = self.eval_env.observation_space(agents[0])
-                num_envs = self.num_cpu
+            agents = self.eval_env.venv.vec_envs[0].par_env.possible_agents
+            num_agent = len(agents)
+            observation_space = self.eval_env.venv.vec_envs[0].par_env.observation_space(
+                agents[0])
+            num_envs = self.num_cpu
 
-                actions = [0] * (len(agents) + num_envs)
-                for env in range(0, num_envs):
- 
-                    print(observation.shape)
+            if policy_constraints is not None and observation.shape[0] == (num_agent * num_envs):
 
-                # obs_list = []
-                    # for i, agent in enumerate(self.env.venv.par_env.possible_agents):
-                    #     if agent not in obs_dict:
-                    #         raise AssertionError(
-                    #             "environment has agent death. Not allowed for pettingzoo_env_to_vec_env_v1 unless black_death is True"
-                    #         )
-                    #     obs_list.append(obs_dict[agent])
+                for num_env in range(0, num_envs):
 
-                # self.env.venv.vec_envs[0].par_env.observation_space(par_env.possible_agents[0])
-                # print(self.env.venv.observation_space)
-                # print(self.env.venv.vec_envs[0].par_env.possible_agents)
+                    env_obs = observation[(
+                        num_env * num_agent):((num_env + 1)*num_agent)]
 
-                return actions, state
-            else:
-                return initial_predict(_self, observation, state, episode_start, deterministic)
+                    for agent_index, agent in enumerate(agents):
+
+                        if agent in policy_constraints.keys():
+
+                            agent_obs = str(env_obs[agent_index])
+
+                            if agent_obs in policy_constraints[agent].keys():
+                                actions[num_env * num_envs +
+                                        agent_index] = policy_constraints[agent][agent_obs]
+
+            # print(actions)
+            return actions, state
 
         return predict
-
 
     def train(self):
 
@@ -106,7 +109,7 @@ class TrainTestManager:
             # Almost infinite number of timesteps, but the training will converge at some point
             self.model.learn(total_timesteps=int(2e10),
                              callback=self.eval_callback, progress_bar=True)
-            # self.model.save("policy")
+            self.model.save("policy")
 
         else:
             print("Resuming training")
@@ -121,7 +124,12 @@ class TrainTestManager:
 
         print("Testing")
 
-        self.eval_env.reset(seed=42)
+        self.eval_env = ss.pettingzoo_env_to_vec_env_v1(self.eval_env)
+
+        self.eval_env = ss.concat_vec_envs_v1(
+            self.eval_env, num_vec_envs=self.num_cpu, num_cpus=self.num_cpu, base_class='stable_baselines3')
+
+        self.eval_env.reset()
 
         model = PPO.load(path="./logs/best_model.zip",
                          tensorboard_log="./tensorboard/")
@@ -132,37 +140,52 @@ class TrainTestManager:
         NUM_RESETS = 1
         i = 0
 
-        perfect_policy = [5, 0, 0, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 6, 0, 0, 0, 5, 0, 0, 4, 0, 0, 4,
-                          0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 6, 0, 0, 0, 5, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 6]
-
-        frame_list = [Image.fromarray(self.eval_env.render())]
+        # frame_list = [Image.fromarray(self.eval_env.render())]
 
         for i in range(NUM_RESETS):
-            self.eval_env.reset(seed=42)
-            for agent in self.eval_env.agent_iter():
-                obs, rew, done, trunc, info = self.eval_env.last()
 
-                print("+"*30)
-                print(obs)
-                print("+"*30)
+            obs = self.eval_env.reset()
 
-                act = model.predict(obs, deterministic=True)[
-                    0] if not (done or trunc) else None
-                # act = self.eval_env.action_space(
-                #     agent).sample(mask=info["action_masks"])
+            while True:
+                action, _states = model.predict(obs)
+                obs, rewards, dones, info = self.eval_env.step(action)
 
-                if trunc or done:
-                    act = None
+                # print(obs, rewards, dones, info)
 
-                self.eval_env.step(act)
+                if dones[0] == True:
+                    break
 
-                i += 1
-                if i % (len(self.eval_env.possible_agents)+1) == 0:
-                    total_reward = rew
-                    img = Image.fromarray(self.eval_env.render())
-                    frame_list.append(img)
+                total_reward += rewards[0]
 
-        env_id = self.eval_env.metadata["name"]
+                img = Image.fromarray(self.eval_env.render())
+                frame_list.append(img)
+
+        # for i in range(NUM_RESETS):
+        #     self.eval_env.reset(seed=42)
+        #     for agent in self.eval_env.agent_iter():
+        #         obs, rew, done, trunc, info = self.eval_env.last()
+
+        #         act = 0
+        #         # if str(obs) in self.policy_constraints[agent].keys():
+        #         #     act = self.policy_constraints[agent][str(obs)]
+
+        #         act = model.predict(obs, deterministic=True)[
+        #             0] if not (done or trunc) else None
+        #         # act = self.eval_env.action_space(
+        #         #     agent).sample(mask=info["action_masks"])
+
+        #         if trunc or done:
+        #             act = None
+
+        #         self.eval_env.step(act)
+
+        #         i += 1
+        #         if i % (len(self.eval_env.possible_agents)+1) == 0:
+        #             total_reward = rew
+        #             img = Image.fromarray(self.eval_env.render())
+        #             frame_list.append(img)
+
+        env_id = self.eval_env.venv.metadata["name"]
         frame_list[0].save(f"{env_id}.gif", save_all=True,
                            append_images=frame_list[1:], duration=10, loop=0)
 
@@ -189,13 +212,53 @@ def main():
 
     train_env = moving_company_v0.parallel_env(
         render_mode="grid", size=10, seed=42, max_cycles=21)
-    eval_env = moving_company_v0.env(
+    eval_env = moving_company_v0.parallel_env(
         render_mode="rgb_array", size=10, seed=42, max_cycles=21)
+    # eval_env = moving_company_v0.env(
+    #     render_mode="rgb_array", size=10, seed=42, max_cycles=21)
+
+    policy_constraints = {
+        "agent_0": {
+            "[0 1 0 0 2 0 0 1 0]": 1,
+            "[0 5 0 0 2 0 0 1 0]": 5,
+            "[0 4 0 0 3 0 0 1 0]": 2,
+            "[0 1 0 0 3 0 0 1 0]": 2,
+            "[0 1 0 0 3 0 0 4 1]": 6,
+            "[0 1 0 0 3 0 0 4 2]": 6,
+            "[0 1 0 0 2 0 0 5 1]": 0,
+            "[0 1 0 0 2 0 0 5 2]": 0,
+        },
+        "agent_1": {
+            "[1 0 0 5 2 1 0 0 0]": 5,
+            "[2 0 0 5 2 1 0 0 0]": 5,
+            "[1 0 0 4 3 1 0 0 0]": 4,
+            "[2 0 0 4 3 1 0 0 0]": 4,
+            "[0 0 0 1 3 1 0 0 0]": 4,
+            "[0 0 0 1 2 1 0 0 0]": 3,
+            "[0 0 1 1 3 4 0 0 0]": 6,
+            "[0 0 2 1 3 4 0 0 0]": 6,
+            "[0 0 1 1 2 5 0 0 0]": 0,
+            "[0 0 2 1 2 5 0 0 0]": 0,
+
+        },
+        "agent_2": {
+            "[0 1 0 0 2 0 1 5 0]": 5,
+            "[0 1 0 0 2 0 2 5 0]": 5,
+            "[0 1 0 0 3 0 1 4 0]": 1,
+            "[0 1 0 0 3 0 2 4 0]": 1,
+            "[0 4 0 0 2 0 0 1 0]": 2,
+            "[0 1 0 0 2 0 0 1 0]": 2,
+            "[0 1 0 0 3 0 0 1 0]": 1,
+            "[0 4 0 0 3 0 0 1 0]": 6,
+            "[0 5 0 0 2 0 0 1 0]": 0,
+        }
+    }
 
     exenv = TrainTestManager(
         train_env=train_env,
         eval_env=eval_env,
-        num_cpu=num_cpu)
+        num_cpu=num_cpu,
+        policy_constraints=policy_constraints)
 
     if mode == "train":
         exenv.train()
