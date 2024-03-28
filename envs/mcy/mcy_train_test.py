@@ -34,6 +34,8 @@ class TrainTestManager:
         if not os.path.exists("./logs"):
             os.makedirs("./logs")
 
+        self.agents = self.env.possible_agents
+
         self.env = ss.pettingzoo_env_to_vec_env_v1(self.env)
 
         self.env = ss.concat_vec_envs_v1(
@@ -65,28 +67,30 @@ class TrainTestManager:
 
             actions, state = initial_predict(
                 _self, observation, state, episode_start, deterministic)
-
-            agents = self.eval_env.venv.vec_envs[0].par_env.possible_agents
-            num_agent = len(agents)
-            observation_space = self.eval_env.venv.vec_envs[0].par_env.observation_space(
-                agents[0])
+            # print(actions)
+            num_agent = len(self.agents)
+            # observation_space = self.eval_env.venv.vec_envs[0].par_env.observation_space(
+            #     agents[0])
             num_envs = self.num_cpu
 
             if policy_constraints is not None and observation.shape[0] == (num_agent * num_envs):
 
                 for num_env in range(0, num_envs):
-
+                    
                     env_obs = observation[(
                         num_env * num_agent):((num_env + 1)*num_agent)]
 
-                    for agent_index, agent in enumerate(agents):
+                    for agent_index, agent in enumerate(self.agents):
 
                         if agent in policy_constraints.keys():
 
                             agent_obs = str(env_obs[agent_index])
 
+                            # print(agent_obs)
+                            # print("="*30)
+
                             if agent_obs in policy_constraints[agent].keys():
-                                actions[num_env * num_envs +
+                                actions[num_env * num_agent +
                                         agent_index] = policy_constraints[agent][agent_obs]
 
             # print(actions)
@@ -140,25 +144,24 @@ class TrainTestManager:
         NUM_RESETS = 1
         i = 0
 
-        # frame_list = [Image.fromarray(self.eval_env.render())]
+        frame_list = [Image.fromarray(self.eval_env.render())]
 
         for i in range(NUM_RESETS):
 
             obs = self.eval_env.reset()
+            
+            for j in range(0, 22):
 
-            while True:
                 action, _states = model.predict(obs)
                 obs, rewards, dones, info = self.eval_env.step(action)
-
-                # print(obs, rewards, dones, info)
-
-                if dones[0] == True:
-                    break
 
                 total_reward += rewards[0]
 
                 img = Image.fromarray(self.eval_env.render())
                 frame_list.append(img)
+
+                if dones[0]:
+                    break
 
         # for i in range(NUM_RESETS):
         #     self.eval_env.reset(seed=42)
@@ -211,9 +214,9 @@ def main():
         num_cpu = int(args[3])
 
     train_env = moving_company_v0.parallel_env(
-        render_mode="grid", size=10, seed=42, max_cycles=21)
+        render_mode="grid", size=10, seed=42)
     eval_env = moving_company_v0.parallel_env(
-        render_mode="rgb_array", size=10, seed=42, max_cycles=21)
+        render_mode="rgb_array", size=10, seed=42)
     # eval_env = moving_company_v0.env(
     #     render_mode="rgb_array", size=10, seed=42, max_cycles=21)
 
@@ -227,6 +230,8 @@ def main():
             "[0 1 0 0 3 0 0 4 2]": 6,
             "[0 1 0 0 2 0 0 5 1]": 0,
             "[0 1 0 0 2 0 0 5 2]": 0,
+            "[0 1 0 0 2 0 0 4 3]": 0,
+            "[0 1 0 0 2 0 0 4 1]": 0
         },
         "agent_1": {
             "[1 0 0 5 2 1 0 0 0]": 5,
@@ -239,6 +244,10 @@ def main():
             "[0 0 2 1 3 4 0 0 0]": 6,
             "[0 0 1 1 2 5 0 0 0]": 0,
             "[0 0 2 1 2 5 0 0 0]": 0,
+            "[1 0 0 4 2 1 0 0 0]": 0,
+            "[3 0 0 4 2 1 0 0 0]": 0,
+            "[0 0 1 1 2 4 0 0 0]": 0,
+            "[0 0 3 1 2 4 0 0 0]": 0
 
         },
         "agent_2": {
@@ -251,14 +260,15 @@ def main():
             "[0 1 0 0 3 0 0 1 0]": 1,
             "[0 4 0 0 3 0 0 1 0]": 6,
             "[0 5 0 0 2 0 0 1 0]": 0,
-        }
+            "[0 1 0 0 2 0 1 4 0]": 0,
+            "[0 1 0 0 2 0 3 4 0]": 0}
     }
 
     exenv = TrainTestManager(
         train_env=train_env,
         eval_env=eval_env,
-        num_cpu=num_cpu,
-        policy_constraints=policy_constraints)
+        num_cpu=num_cpu)#,
+        # policy_constraints=policy_constraints)
 
     if mode == "train":
         exenv.train()

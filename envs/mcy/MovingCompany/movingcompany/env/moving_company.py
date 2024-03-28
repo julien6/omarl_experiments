@@ -85,10 +85,11 @@ class raw_env(AECEnv, EzPickle):
             render_mode=render_mode
         )
 
-        self.observation_spaces = {agent: MultiDiscrete([6] * 3**2, seed=self._seed) for agent in self.possible_agents}
+        self.observation_spaces = {agent: MultiDiscrete(
+            [6] * 3**2, seed=self._seed) for agent in self.possible_agents}
 
-        self.action_spaces = {agent: Discrete(7, seed=self._seed) for agent in self.possible_agents}
-
+        self.action_spaces = {agent: Discrete(
+            7, seed=self._seed) for agent in self.possible_agents}
 
     def init_grid_environment(self, seed: int):
         self.grid = np.ones((self.size, self.size), dtype=np.int64)
@@ -124,6 +125,13 @@ class raw_env(AECEnv, EzPickle):
                                     agents_counter -= 1
                                     agent_condition_positions.pop()
                                     continue
+        self.best_trajectory = []
+        for i in range(1, self.size - 1):
+            self.best_trajectory += [(i, 1)]
+        for j in range(2, self.size - 1):
+            self.best_trajectory += [(self.size - 2, j)]
+        for i in range(1, self.size - 2):
+            self.best_trajectory += [(self.size - 2 - i, self.size - 2)]
 
     def apply_action(self, agent_name: str, action: int):
         agent_position = self.agents_position[agent_name]
@@ -205,7 +213,7 @@ class raw_env(AECEnv, EzPickle):
     def check_terminated(self) -> bool:
         return self.grid[1][-2] == 5
 
-    def compute_reward(self) -> int:
+    def compute_reward(self) -> float:
 
         package_pos = None
         for i in range(0, self.size):
@@ -216,24 +224,20 @@ class raw_env(AECEnv, EzPickle):
             if package_pos is not None:
                 break
 
-        best_trajectory = []
-        for i in range(1, self.size - 1):
-            best_trajectory += [(i, 1)]
-        for j in range(2, self.size - 1):
-            best_trajectory += [(self.size - 2, j)]
-        for i in range(1, self.size - 2):
-            best_trajectory += [(self.size - 2 - i, self.size - 2)]
-
-        for i, pos in enumerate(best_trajectory):
+        for i, pos in enumerate(self.best_trajectory):
             progress_counter = i
             if package_pos == pos:
                 break
 
-        progress_difference = progress_counter - self._best_reward
-        if (self._best_reward < progress_counter):
-            self._best_reward = progress_counter
+        # progress_difference = progress_counter - self._best_reward
+        # if (self._best_reward < progress_counter):
+        #     self._best_reward = progress_counter
 
-        return progress_difference
+        # print(1 / ((len(best_trajectory) + 0.01) - progress_counter))
+
+        # return 1 / ((len(best_trajectory) + 0.001) - progress_counter)
+    
+        return progress_counter ** 2
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
