@@ -93,7 +93,6 @@ class TrainTestManager:
 
                             if agent_obs in policy_constraints[agent].keys():
                                 actions[num_env * num_agent +
-                                actions[num_env * num_agent +
                                         agent_index] = policy_constraints[agent][agent_obs]
 
             # print(actions)
