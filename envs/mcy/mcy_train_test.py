@@ -29,6 +29,8 @@ class TrainTestManager:
 
         self.policy_constraints = policy_constraints
 
+        self.agents = self.env.aec_env.possible_agents
+
         if not os.path.exists("./tensorboard"):
             os.makedirs("./tensorboard")
         if not os.path.exists("./logs"):
@@ -90,6 +92,7 @@ class TrainTestManager:
                             # print("="*30)
 
                             if agent_obs in policy_constraints[agent].keys():
+                                actions[num_env * num_agent +
                                 actions[num_env * num_agent +
                                         agent_index] = policy_constraints[agent][agent_obs]
 
