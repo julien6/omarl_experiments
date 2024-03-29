@@ -37,4 +37,5 @@
 
 ./src/envs_case_studies/mcy/sb3/python-envs/*
 src/envs_case_studies/mcy/sb3/python-envs/*
-src/envs_case_studies/pbl/pistonball2/python-envs/pistonball2/bin/cython
+src/envs_case_studies/pbl/pistonball2/python-envs/
+src/envs_case_studies/mcy/sb3/mcy/bin/AutoROM
