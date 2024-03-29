@@ -270,8 +270,8 @@ def main():
     exenv = TrainTestManager(
         train_env=train_env,
         eval_env=eval_env,
-        num_cpu=num_cpu)  # ,
-    # policy_constraints=policy_constraints)
+        num_cpu=num_cpu,
+        policy_constraints=policy_constraints)
 
     if mode == "train":
         exenv.train()
