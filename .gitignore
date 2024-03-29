@@ -1,35 +1,40 @@
  __pycache__/
 *.pyc
 
-envs/pbl/python-envs/**
-envs/pbl/ray_results/**
+./src/envs_case_studies/pbl/python-envs/**
+./src/envs_case_studies/pbl/ray_results/**
 
-envs/pbl/pistonball2/python-envs/**
-envs/pbl/pistonball2/ray_results/**
+./src/envs_case_studies/pbl/pistonball2/python-envs/**
+./src/envs_case_studies/pbl/pistonball2/ray_results/**
 
-envs/kaz/python-envs/**
-envs/kaz/ray_results/**
+./src/envs_case_studies/kaz/python-envs/**
+./src/envs_case_studies/kaz/ray_results/**
 
-envs/mcy/python-envs/**
-envs/mcy/logs/**
-envs/mcy/ray_results/**
+./src/envs_case_studies/mcy/python-envs/**
+./src/envs_case_studies/mcy/logs/**
+./src/envs_case_studies/mcy/ray_results/**
 
-envs/ppy/python-envs/**
-envs/ppy/ray_results/**
+./src/envs_case_studies/ppy/python-envs/**
+./src/envs_case_studies/ppy/ray_results/**
 
-envs/cyb/python-envs/**
-envs/cyb/ray_results/**
+./src/envs_case_studies/cyb/python-envs/**
+./src/envs_case_studies/cyb/ray_results/**
 
 ./**/*.pyc
 
-envs/**/logs/**
-envs/**/tensorboard/**
+./src/envs_case_studies/**/logs/**
+./src/envs_case_studies/**/tensorboard/**
 
 ./**/__pycache__/**
-envs/**/__pycache__/**
-envs/**/.pyc
+./src/envs_case_studies/**/__pycache__/**
+./src/envs_case_studies/**/.pyc
 
-envs/**/__pycache__/*
-envs/**/*.pyc
-envs/**/*.zip
-envs/**/*.gif
+./src/envs_case_studies/**/__pycache__/*
+./src/envs_case_studies/**/*.pyc
+./src/envs_case_studies/**/*.zip
+./src/envs_case_studies/**/*.gif
+./src/envs_case_studies/kaz/requirements.txt
+
+./src/envs_case_studies/mcy/sb3/python-envs/*
+src/envs_case_studies/mcy/sb3/python-envs/*
+src/envs_case_studies/pbl/pistonball2/python-envs/pistonball2/bin/cython

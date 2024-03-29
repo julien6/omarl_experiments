@@ -1,6 +1,0 @@
-matplotlib
-SuperSuit
-numpy
-pettingzoo[classic,butterfly]
-array2gif
-stable-baselines3
