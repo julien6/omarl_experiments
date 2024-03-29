@@ -1,5 +1,4 @@
 import functools
-import sys
 import gymnasium
 import numpy as np
 import random
@@ -11,7 +10,7 @@ from PIL import Image
 from pettingzoo.utils.conversions import aec_to_parallel
 from pprint import pprint
 from pettingzoo.utils.conversions import parallel_wrapper_fn
-from MovingCompany.movingcompany.env.renderer import GridRenderer
+from custom_envs.movingcompany.env.renderer import GridRenderer
 
 
 FPS = 20

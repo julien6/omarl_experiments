@@ -15,7 +15,7 @@ from stable_baselines3.common.vec_env import VecExtractDictObs, VecMonitor
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.callbacks import CheckpointCallback
 from PIL import Image
-from custom_envs.MovingCompany.movingcompany import moving_company_v0
+from custom_envs.movingcompany import moving_company_v0
 import gymnasium as gym
 
 
