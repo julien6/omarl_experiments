@@ -16,7 +16,6 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.callbacks import CheckpointCallback
 from PIL import Image
 from custom_envs.movingcompany import moving_company_v0
-import gymnasium as gym
 
 
 # from custom_envs.movingcompany import moving_company_v0
