@@ -105,3 +105,77 @@ class PrahomWrapper(BaseWrapper):
     def generate_organizational_specifications_figures(self):
         pass
 
+
+if __name__ == "__main__":
+
+    from custom_envs.movingcompany import moving_company_v0
+    from prahom_wrapper import prahom_wrapper
+
+    env = moving_company_v0.parallel_env(render_mode="human")
+
+    org_specs = {
+
+    }
+
+    specs_to_hist = {
+        "structural_specifications": {
+            "roles": {
+                "downward_carrier": {
+                    "[0 1 0 0 2 0 0 1 0]": 1,
+                    "[0 5 0 0 2 0 0 1 0]": 5,
+                    "[0 4 0 0 3 0 0 1 0]": 2,
+                    "[0 1 0 0 3 0 0 1 0]": 2,
+                    "[0 1 0 0 3 0 0 4 1]": 6,
+                    "[0 1 0 0 3 0 0 4 2]": 6,
+                    "[0 1 0 0 2 0 0 5 1]": 0,
+                    "[0 1 0 0 2 0 0 5 2]": 0,
+                    "[0 1 0 0 2 0 0 4 3]": 0,
+                    "[0 1 0 0 2 0 0 4 1]": 0
+                },
+                "upward_carrier": {
+
+                },
+                "leftward_carrier": {
+
+                }
+            },
+            "sub_groups": {},
+            "intra_links": {},
+            "inter_links": {},
+            "intra_compatibilities": {},
+            "inter_compatibilities": {},
+            "role_cardinalities": {},
+            "sub_group_cardinalities": {}
+        },
+        "functional_specifications": {
+            "social_schemes": {
+                "sch1": {
+                    "goals": {},
+                    "mission_labels": {},
+                    "plans": {},
+                    "mission_to_goals": {},
+                    "mission_to_agent_cardinality": {}
+                }
+            },
+            "social_preferences": {
+                "sch1,sch2": "sch1"
+            }
+        },
+        "deontic_specifications": {
+            "permissions": {
+                ""
+            },
+            "obligations": {
+                "downward_carrier": {
+                    "m1": "INFINITE"
+                }
+            }
+        }
+    }
+
+    env = prahom_wrapper(env, hist_to_specs, agt_to_cons_specs, "CORRECT", [
+                         "sequence_clustering"], ["role", "plan"], ["dendogram", "PCA"])
+
+    env.train("PPO_default")
+
+    raw_specs, agent_to_specs = env.generate_specs()
