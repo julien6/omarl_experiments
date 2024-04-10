@@ -151,7 +151,7 @@ if __name__ == "__main__":
             "social_schemes": {
                 "sch1": {
                     "goals": {},
-                    "mission_labels": {},
+                    "missions": {},
                     "plans": {},
                     "mission_to_goals": {},
                     "mission_to_agent_cardinality": {}
@@ -173,9 +173,52 @@ if __name__ == "__main__":
         }
     }
 
-    env = prahom_wrapper(env, hist_to_specs, agt_to_cons_specs, "CORRECT", [
+    # specs_to_hist : For a given specification what would we expect to see in histories ?
+    #   - On peut définir toutes les spécifications de MOISE+ et pour chacune dire
+    #     si on s'attend à ce que les historiques aient une certaine forme
+    #   
+
+    # observations:
+    #  - 14 : proie presque coincée
+    #  - 9 : ordre reçu
+    #
+    # actions:
+    #  - 0 : rien faire
+    #  - 41 : appliquer ordre encerclement
+    #  - 17 : broadcast ordre encerclement
+
+    specs_to_hist = {
+        "structural_specifications": {
+            "roles":{
+                "leader": {14: [17,0], 9: [0]},
+                "follower": {9: [41], 14: [0]}
+            },
+            "sub_groups": {},
+            "intra_links": {"leader": {"follower": {"aut": [".*17,.{2,3},41.*"]}}},
+            "inter_links": {},
+            "intra_compatibilities": {},
+            "inter_compatibilities": {},
+            "role_cardinalities": {},
+            "sub_group_cardinalities": {}
+        },
+        "functional_specifications": {
+            "schs": {
+                "sch1": {
+                    "goals": ["prey_corner_blocked","prey_down_blocked", "prey_right_blocked"]},
+                    "missions": ["m1"],
+                    "plans": {"prey_corner_blocked": "prey_down_blocked || prey_right_blocked"},
+                    "mission_to_goals": {"m1": ["prey_right_blocked", "prey_corner_blocked", "prey_down_blocked"]},
+                    "mission_to_agent_cardinality": {"m1": [2,2]}
+                },
+            "social_preferences": {}
+        },
+        "ds": {
+            "permissions": {},
+            "obligations": {"(leader,m1,Any)": }
+        }
+    }
+    agt_to_cons_specs = {"agent_0": {"ss": {"roles":["leader"]}}}
+    env = prahom_wrapper(env, specs_to_hist, agt_to_cons_specs, "CORRECT", [
                          "sequence_clustering"], ["role", "plan"], ["dendogram", "PCA"])
-
     env.train("PPO_default")
-
     raw_specs, agent_to_specs = env.generate_specs()
