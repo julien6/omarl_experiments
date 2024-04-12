@@ -176,8 +176,8 @@ if __name__ == "__main__":
     # specs_to_hist : For a given specification what would we expect to see in histories ?
     #   - On peut définir toutes les spécifications de MOISE+ et pour chacune dire
     #     si on s'attend à ce que les historiques aient une certaine forme
-    #   
-
+    #
+    #
     # observations:
     #  - 14 : proie presque coincée
     #  - 9 : ordre reçu
@@ -187,10 +187,53 @@ if __name__ == "__main__":
     #  - 41 : appliquer ordre encerclement
     #  - 17 : broadcast ordre encerclement
 
+    organizational_specifications_format = {
+        "structural_specifications": {
+            "all_roles": [],
+            "inheritance_role_relations": {},
+            "root_groups": {
+                "rg1": {
+                    "roles": ["r1", "r2", "r3"],
+                    "sub_groups": {"sg1": {}, "sg2": {}},
+                    "intra_links": {"r1": {"r2": ["aut", "com", "acq"], "r3": ["acq"]}},
+                    "inter_links": {"r2": {"r3": ["com", "acq"]}},
+                    "intra_compatibilities": {"r1": ["r2", "r3"]},
+                    "inter_compatibilities": {"r2": ["r3"]},
+                    "role_cardinalities": {"r1": [0, 1], "r2": [1, 1], "r3": [1, 4]},
+                    "sub_group_cardinalities": {"sg1": [1, 1], "sg2": [1, 1]}
+                }
+            }
+        },
+        "functional_specifications": {
+            "social_schemes": {
+                "sch1": {
+                    "goals": {},
+                    "missions": {},
+                    "plans": {},
+                    "mission_to_goals": {},
+                    "mission_to_agent_cardinality": {}
+                }
+            },
+            "social_preferences": {
+                "sch1,sch2": "sch1"
+            }
+        },
+        "deontic_specifications": {
+            "permissions": {
+                ""
+            },
+            "obligations": {
+                "downward_carrier": {
+                    "m1": "INFINITE"
+                }
+            }
+        }
+    }
+
     specs_to_hist = {
         "structural_specifications": {
-            "roles":{
-                "leader": {14: [17,0], 9: [0]},
+            "roles": {
+                "leader": {14: [17, 0], 9: [0]},
                 "follower": {9: [41], 14: [0]}
             },
             "sub_groups": {},
@@ -204,12 +247,12 @@ if __name__ == "__main__":
         "functional_specifications": {
             "schs": {
                 "sch1": {
-                    "goals": ["prey_corner_blocked","prey_down_blocked", "prey_right_blocked"]},
-                    "missions": ["m1"],
-                    "plans": {"prey_corner_blocked": "prey_down_blocked || prey_right_blocked"},
-                    "mission_to_goals": {"m1": ["prey_right_blocked", "prey_corner_blocked", "prey_down_blocked"]},
-                    "mission_to_agent_cardinality": {"m1": [2,2]}
-                },
+                    "goals": ["prey_corner_blocked", "prey_down_blocked", "prey_right_blocked"]},
+                "missions": ["m1"],
+                "plans": {"prey_corner_blocked": "prey_down_blocked || prey_right_blocked"},
+                "mission_to_goals": {"m1": ["prey_right_blocked", "prey_corner_blocked", "prey_down_blocked"]},
+                "mission_to_agent_cardinality": {"m1": [2, 2]}
+            },
             "social_preferences": {}
         },
         "ds": {
@@ -217,7 +260,7 @@ if __name__ == "__main__":
             "obligations": {"(leader,m1,Any)": }
         }
     }
-    agt_to_cons_specs = {"agent_0": {"ss": {"roles":["leader"]}}}
+    agt_to_cons_specs = {"agent_0": {"ss": {"roles": ["leader"]}}}
     env = prahom_wrapper(env, specs_to_hist, agt_to_cons_specs, "CORRECT", [
                          "sequence_clustering"], ["role", "plan"], ["dendogram", "PCA"])
     env.train("PPO_default")
