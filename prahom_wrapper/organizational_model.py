@@ -442,26 +442,6 @@ if __name__ == "__main__":
     json.dump(dataclasses.asdict(org_model), open("organizational_model.json", "w"),
               indent=4, cls=os_encoder)
 
-    # class os_decoder(json.JSONDecoder):
-    #     def __init__(self, *args, kwargs):
-    #         super().__init__(object_hook=self.object_hook, *args, kwargs)
-
-    #     def object_hook(self, obj):
-
-    #         if 'structural_specifications' in obj:
-    #             return structural_specifications(obj)
-
-    #         if 'functional_specifications' in obj:
-    #             return functional_specifications(obj)
-
-    #         if 'deontic_specifications' in obj:
-    #             return deontic_specifications(obj)
-
-    #         return obj
-
-    # os1 = organizational_model(
-    #     json.load(open("organizational_model.json"), cls=os_decoder))
-
     os1 = organizational_model.from_dict(
         json.load(open("organizational_model.json")))
 
@@ -470,5 +450,5 @@ if __name__ == "__main__":
 
     os2 = organizational_model.from_dict(
         json.load(open("organizational_model.json")))
-    
+
     print(os1 == os2)
