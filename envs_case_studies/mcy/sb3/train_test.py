@@ -19,7 +19,7 @@ from custom_envs.movingcompany import moving_company_v0
 
 
 from custom_envs.movingcompany import moving_company_v0
-from prahom_wrapper import prahom_wrapper
+from prahom_wrapper.prahom_wrapper import prahom_wrapper
 env = moving_company_v0.parallel_env(render_mode="human")
 
 hist_to_specs = lambda hist: {"role": "horizontal_mover"} if "3" in [
