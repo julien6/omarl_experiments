@@ -12,9 +12,119 @@ class action (int):
 class observation (object):
     pass
 
+# A joint history is a n-tuple (n, number of agent).
+# Each component is a the i-th agent's history
 
-class linked_history:
-    """A convenient history representation to link organizational specifications"""
+# From a set of joint history we would like to infer a set of organizational specifications
+#
+# For instance, 3 trained agents in three independent MCY environments, produce 3 joint history with 3 trained agents in MCY are mapped:
+#
+#  - Structural Specifications:
+#     - Individual level: to the roles = "downward_bringer", "left_bringer", "upward_bringer"
+#     - Social level: intra_links = .'link("downward_bringer", "leftward_bringer", acq)' and 'link("leftward_bringer", "upward_bringer", acq)'
+#     - Collective level: no compatibilities between roles -> gr = (roles, {}, intra_links, {}, {}, {}, {"downward_bringer": [1,1], "left_bringer": [1,1], "upward_bringer": [1,1]}, {})
+#
+#  - Functional Specifications:
+#     - Social Schemes:
+#        - sch1 = (goals, missions, plans, mission_to_goals, mission_to_agent_cardinality)
+#               - goals = {"package in bottom-left drop zone", "package in bottom-right drop zone", "package in upper-right drop zone"}
+#               - missions = {"m1", "m2", "m3"}
+#               - plans = {"package in upper-right drop zone" = '"package in bottom-left drop zone", "package in bottom-right drop zone"'}
+#               - mission_to_goals = {"m1": "package in bottom-left drop zone", "m2": "package in bottom-right drop zone", "m3": "package in upper-right drop zone"}
+#               - mission_to_agent_cardinality = {"m1": [1,1], "m2": [1,1], "m3": [1,1]}
+#     - Social Preferences = {}
+#
+#  - Deontic Specifications:
+#     - permissions = [("downward_bringer", "m1", "Any"), ("left_bringer", "m2", "Any"), ("upward_bringer", "m3", "Any")]
+#     - obligations = [("downward_bringer", "m1", "Any"), ("left_bringer", "m2", "Any"), ("upward_bringer", "m3", "Any")]
+#
+# TODO: a role = a set of policies
+#
+# Partial Relation between Agents' Histories and Organizational Model (PRAHOM) is the algorithm for infering these specifications
+# from trained agents' histories.
+# 
+# The PRAHOM process workflow is roughly described below:
+#
+#  I) INFERRING STRUCTURAL SPECIFICATIONS
+#   
+#      1) Inferring agents' roles:
+#           For joint_history in joint_histories, for each agent's history in joint_history, infer by matching known roles or generalizing new ones
+#
+#           Definition of a role regarding a joint-history: a role is associated with a cluster of a dendogram produced by measuring by the length of 
+#           the longest common sequence between two histories, once associated, the role is the policy obtained after settifiying the longest common 
+#           sequence which is the root of the cluster
+#
+#           Example of results:
+#                jhrs = {"jh1": {"agent_0": "role_0", "agent_1": "role_1", "agent_2": "role_2"},
+#                  "jh2": {"agent_0": "role_1", "agent_1": "role_0", "agent_2": "role_2"},
+#                 "jh3": {"agent_0": "role_2", "agent_1": "role_1", "agent_2": "role_0"}}
+#   
+#      2) Inferring roles compatibilities:
+#
+#           Definition of a compatibility regarding several joint-histories
+#
+#           roles_compatibilities = {agent: {} for agent in agents}
+#           For agent in agents
+#               role_compatibilities[agent].add([jhr[agent] for jhr in jhrs])
+#    
+#      3) Inferring roles links:
+#
+#           A link(role1, role2, role_type)
+#
+#           Definition of the non-existence of a link:
+#               -> There is no link(r1, r2, rt) if generate_history(agent(r1)) == generate_history(agent(r1),agent(r2)))
+#
+#           Definition of a link(r1,r2,rt) regarding a joint-history
+#               - rt:
+#                   - acq: generate_history(agent(r1)) != generate_history(agent(r1),agent(r2, inactive=True)) => l'agent r1 peut voir et représenter 
+#                          l'agent r2 (qui ne fait rien mais doit être visible pour l'autre agent) car ses historiques ne sont pas les mêmes s'il n'est pas là => la sous-séquence de différence 
+#                          entre les deux correspond au lien link(r1,r2,rt) <-> delta_social = diff(generate_history(agent(r1),agent(r2, inactive=True)), 
+#                          generate_history(agent(r1)))
+#                   - com: dans une relation avec acquaintance, il y a une action dans agent r1 (delta social) qui associe une observation particulière systématiquement chez r2 après plus ou moins de temps => 
+#                   - aut: dans une relation avec communication, il y a une réaction (sous-séquence d'historique) qui apparait systématiquement après plus ou moins de temps de la reception de l'observation
+#
+#           zero_socially_impacted_history = {}
+#
+#           For each inferred_role in inferred_roles
+#               non_socially_impacted_history = generate_history(env([agent(role=inferred_role)]))
+#
+#           one_socially_impacted_history = {}
+#           For each inferred_role1 in inferred_roles
+#               For each inferred_role2 in inferred_roles
+#                 one_socially_impacted_history = generate_history(env([agent(role=inferred_role1), agent(role=inferred_role2)]))
+#                 impact_of
+#
+#     4) Inferring sub-groups: on représente les liens entre les agents jouant en mesurant les impacts qu'ils ont les uns sur les autres, si un role joué par un agent a un impact uniquement sur son cluster (groupe), alors le lien est intra, sinon le lien est inter
+#
+#     5) Inferring role cardinality
+#
+#     6) Inferring sub-groups cardinality
+#
+#
+# II) INFERRING FUNCTIONAL SPECIFICATIONS
+#
+#     1) Inferring goals:
+#           - on regarde la fonction de transition des états qui mène au succès, on chosit les états seuils, l'état seuil est l'état à partir duquel 
+#             tous les autres états menant au succès découlent. Si tous les états sont des états seuils.
+#           - si tous les états sont des états seuils, on échantillone n états pris équitablement dans la fonction de transition
+#
+#     3) Inferring missions
+#           - pour un objectif donné, à quel point un agent y contribue
+#
+#     4) Inferring plans
+#           - en même temps que inferring goals
+#
+#     5) Inferring missions to goals
+#
+#     6) Inferring mission to agent cardinality
+#
+
+class history:
+    """A convenient joint history representation"""
+
+    
+class linked_joint_history:
+    """A convenient joint history representation to link organizational specifications"""
 
     histories_representations: List[Union[str, List[Tuple[observation, action]], Dict[observation, List[action]]]] = [["^.*$"], [], {}]
 
@@ -36,6 +146,7 @@ class linked_history:
         Example:
         >>> linked_history([[("5", "4"),("9", "17")], {"7": ["14", "28"]}, "^("41", "5").*?("6", "23")$", [("5", "1"),("9", "12")]])
         """
+
         for histories_representation in self.histories_representations:
             if isinstance(histories_representation, str):
                 self.regex_histories += [histories_representation]
