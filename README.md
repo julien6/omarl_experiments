@@ -37,7 +37,9 @@ A typical workflow would consist in:
    
 2) Create a new clean virtual python environment:
 
-```cd ~; mkdir python-envs; cd python-envs; python -m venv prahom; source prahom/bin/activate; cd ~```
+```cd ~; mkdir python-envs; cd python-envs; python -m venv prahom; source prahom/bin/activate; cd ~
+
+```
 
 1) In cloned repo, type:
 
@@ -45,8 +47,9 @@ A typical workflow would consist in:
 
 4) Then, type:
 
-```pip install -e .```
+```pip install -e .
 
+```
 
 ## PRAHOM Gym-wrapper use:
 
@@ -118,6 +121,7 @@ trained_specs, agent_to_specs = env.prahom_specs()
 ```
 
 Printing the "agent_to_specs"
+
 ```json
 {
     "groups": {
@@ -133,6 +137,7 @@ Printing the "agent_to_specs"
 ```
 
 Printing the "trained_specs"
+
 ```json
 {
     "structural_specs": {
@@ -153,27 +158,28 @@ Printing the "trained_specs"
 }
 ```
 
-
 _______
 _______
-
 
 ## General results
 
 <figure>
+
     <img src="./assets/images/prahom_learning_curve.png"
          alt="PRAHOM Learning curve">
     <figcaption>Learning curve for the NTS, FTS, and PTS cases over 1000 training iterations in the Pistonball environment*</figcaption>
+
 </figure>
 
 <br>
 
 <figure>
+
     <img src="./assets/images/prahom_pca_analysis.png"
          alt="PRAHOM Learning curve">
     <figcaption>Principal Component Analysis of the trained agents' histories in the Pistonball environment in the NTS</figcaption>
-</figure>
 
+</figure>
 
 ## PRAHOM details
 
@@ -210,6 +216,15 @@ For each step, for each agent:
 3) Update the history after chosen the next action to play
 _______
 
+## Moving Company
+
+![alt text](/assets/images/moving_company_v0.gif)
+
+Moving Company (MCY) is a two-dimensional grid game where mover employees have to bring a package from a cell to a final cell. They are free to move up, left, down, and right in the white cells. They can pick up or drop down the package in the drop zone (yellow cells). The white cells are empty and the grey cells represent walls.
+The game ends when the package is dropped in the final cell.
+The environment is fully discrete, vectorized. Agents' observations are the 3x3 grid cells surrounding an agent.
+
+_______
 
 ## Predator-prey with communication
 
@@ -225,7 +240,6 @@ In particular, the good agents reward, is -5 for every collision with an adversa
 
 _______
 
-
 ## Knights Archers Zombies
 
 Source link: https://pettingzoo.farama.org/environments/butterfly/knights_archers_zombies/
@@ -235,7 +249,6 @@ Source link: https://pettingzoo.farama.org/environments/butterfly/knights_archer
 Knights Archers Zombies (KAZ) is a two-dimensional game where zombies walk from the top border of the screen down to the bottom border in unpredictable paths. The agents you control are knights and archers (default 2 knights and 2 archers) that are initially positioned at the bottom border of the screen. Each agent can rotate clockwise or counter-clockwise and move forward or backward. Each agent can also attack to kill zombies. When a knight attacks, it swings a mace in an arc in front of its current heading direction. When an archer attacks, it fires an arrow in a straight line in the direction of the archer’s heading. The game ends when all agents die (collide with a zombie) or a zombie reaches the bottom screen border. A knight is rewarded 1 point when its mace hits and kills a zombie. An archer is rewarded 1 point when one of their arrows hits and kills a zombie. There are two possible observation types for this environment, vectorized and image-based.
 
 _______
-
 
 ## Pistonball
 
@@ -250,7 +263,6 @@ Accordingly, pistons must learn highly coordinated emergent behavior to achieve 
 Pistonball uses the chipmunk physics engine, and are thus the physics are about as realistic as in the game Angry Birds.
 
 _______
-
 
 ## CybORG - Third CAGE Challenge
 
