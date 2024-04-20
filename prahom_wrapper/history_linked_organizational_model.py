@@ -3,6 +3,7 @@ import dataclasses
 from enum import Enum
 import json
 from typing import Any, Callable, Dict, List, Tuple, Union
+import re
 
 
 class action (int):
@@ -42,23 +43,23 @@ class observation (object):
 #
 # Partial Relation between Agents' Histories and Organizational Model (PRAHOM) is the algorithm for infering these specifications
 # from trained agents' histories.
-# 
+#
 # The PRAHOM process workflow is roughly described below:
 #
 #  I) INFERRING STRUCTURAL SPECIFICATIONS
-#   
+#
 #      1) Inferring agents' roles:
 #           For joint_history in joint_histories, for each agent's history in joint_history, infer by matching known roles or generalizing new ones
 #
-#           Definition of a role regarding a joint-history: a role is associated with a cluster of a dendogram produced by measuring by the length of 
-#           the longest common sequence between two histories, once associated, the role is the policy obtained after settifiying the longest common 
+#           Definition of a role regarding a joint-history: a role is associated with a cluster of a dendogram produced by measuring by the length of
+#           the longest common sequence between two histories, once associated, the role is the policy obtained after settifiying the longest common
 #           sequence which is the root of the cluster
 #
 #           Example of results:
 #                jhrs = {"jh1": {"agent_0": "role_0", "agent_1": "role_1", "agent_2": "role_2"},
 #                  "jh2": {"agent_0": "role_1", "agent_1": "role_0", "agent_2": "role_2"},
 #                 "jh3": {"agent_0": "role_2", "agent_1": "role_1", "agent_2": "role_0"}}
-#   
+#
 #      2) Inferring roles compatibilities:
 #
 #           Definition of a compatibility regarding several joint-histories
@@ -66,7 +67,7 @@ class observation (object):
 #           roles_compatibilities = {agent: {} for agent in agents}
 #           For agent in agents
 #               role_compatibilities[agent].add([jhr[agent] for jhr in jhrs])
-#    
+#
 #      3) Inferring roles links:
 #
 #           A link(role1, role2, role_type)
@@ -76,11 +77,11 @@ class observation (object):
 #
 #           Definition of a link(r1,r2,rt) regarding a joint-history
 #               - rt:
-#                   - acq: generate_history(agent(r1)) != generate_history(agent(r1),agent(r2, inactive=True)) => l'agent r1 peut voir et représenter 
-#                          l'agent r2 (qui ne fait rien mais doit être visible pour l'autre agent) car ses historiques ne sont pas les mêmes s'il n'est pas là => la sous-séquence de différence 
-#                          entre les deux correspond au lien link(r1,r2,rt) <-> delta_social = diff(generate_history(agent(r1),agent(r2, inactive=True)), 
+#                   - acq: generate_history(agent(r1)) != generate_history(agent(r1),agent(r2, inactive=True)) => l'agent r1 peut voir et représenter
+#                          l'agent r2 (qui ne fait rien mais doit être visible pour l'autre agent) car ses historiques ne sont pas les mêmes s'il n'est pas là => la sous-séquence de différence
+#                          entre les deux correspond au lien link(r1,r2,rt) <-> delta_social = diff(generate_history(agent(r1),agent(r2, inactive=True)),
 #                          generate_history(agent(r1)))
-#                   - com: dans une relation avec acquaintance, il y a une action dans agent r1 (delta social) qui associe une observation particulière systématiquement chez r2 après plus ou moins de temps => 
+#                   - com: dans une relation avec acquaintance, il y a une action dans agent r1 (delta social) qui associe une observation particulière systématiquement chez r2 après plus ou moins de temps =>
 #                   - aut: dans une relation avec communication, il y a une réaction (sous-séquence d'historique) qui apparait systématiquement après plus ou moins de temps de la reception de l'observation
 #
 #           zero_socially_impacted_history = {}
@@ -104,7 +105,7 @@ class observation (object):
 # II) INFERRING FUNCTIONAL SPECIFICATIONS
 #
 #     1) Inferring goals:
-#           - on regarde la fonction de transition des états qui mène au succès, on chosit les états seuils, l'état seuil est l'état à partir duquel 
+#           - on regarde la fonction de transition des états qui mène au succès, on chosit les états seuils, l'état seuil est l'état à partir duquel
 #             tous les autres états menant au succès découlent. Si tous les états sont des états seuils.
 #           - si tous les états sont des états seuils, on échantillone n états pris équitablement dans la fonction de transition
 #
@@ -119,21 +120,29 @@ class observation (object):
 #     6) Inferring mission to agent cardinality
 #
 
+
 class history:
-    """A convenient joint history representation"""
+    """
+    A convenient joint history representation to link organizational specifications
 
-    
-class linked_joint_history:
-    """A convenient joint history representation to link organizational specifications"""
+    Example:
+        h1 = history("^(\'14\',\'8\').*?(\'17\',\'1\')$") # all histories starting with ('14','8') and ending with ('17','1')
+        h2 = history({"14": ["8", "12"], "0": ["1"]}) # all histories where all of th observations '14' and '0' are coupled respectively with either '8' or '12', and '1'
+        h3 = history([[('0','1'),('8','19'),('21','3')],[('87','0'),('9','8'),('0', '5')]]) # all histories that are equal to those
+    """
 
-    histories_representations: List[Union[str, List[Tuple[observation, action]], Dict[observation, List[action]]]] = [["^.*$"], [], {}]
+    history_representations: List[Union[str, List[Tuple[observation,
+                                                        action]], Dict[observation, List[action]]]] = [["^.*$"], [], {}]
 
-    regex_histories: List[str] = []
-    list_histories: List[List[Tuple[observation, action]]] = []
-    dict_histories: List[Dict[observation, List[action]]] = []
+    observation_space: List[observation]
+    action_space: List[action]
 
-    def __init__(self, histories_representations: List[Union[str, List[Tuple[observation, action]], Dict[observation, List[action]]]] = [["^.*$"], [], {}]):
-        self.histories_representations = histories_representations
+    regex_representations: List[str] = []
+    list_representations: List[List[Tuple[observation, action]]] = []
+    dict_representations: List[Dict[observation, List[action]]] = []
+
+    def __init__(self, observation_space: List[observation], action_space: List[action], history_representations: List[Union[str, List[Tuple[observation, action]], Dict[observation, List[action]]]] = [["^.*$"], [], {}]):
+        self.history_representations = history_representations
         """
         Represents all of the expected histories linked to organizational specification by combining three ways:
          - lists: describing exhaustively all of the possible histories
@@ -141,20 +150,22 @@ class linked_joint_history:
          - dict: describing a history as a relation between an observation and some actions
 
         Parameters:
-        histories_representations (List[Union[List[str], List[Tuple[observation, action]], Dict[observation, List[action]]]]): The expected history representations
+        history_representations (List[Union[List[str], List[Tuple[observation, action]], Dict[observation, List[action]]]]): The expected history representations
 
         Example:
         >>> linked_history([[("5", "4"),("9", "17")], {"7": ["14", "28"]}, "^("41", "5").*?("6", "23")$", [("5", "1"),("9", "12")]])
         """
 
-        for histories_representation in self.histories_representations:
+        observation_space = observation_space
+        action_space = action_space
+
+        for histories_representation in self.history_representations:
             if isinstance(histories_representation, str):
-                self.regex_histories += [histories_representation]
+                self.regex_representations += [histories_representation]
             if isinstance(histories_representation, List):
-                self.list_histories += [histories_representation]
+                self.list_representations += [histories_representation]
             if isinstance(histories_representation, Dict):
-                self.dict_histories += [histories_representation]
-            
+                self.dict_representations += [histories_representation]
 
     def match(self, last_history: List) -> bool:
         """
@@ -174,7 +185,24 @@ class linked_joint_history:
                 .match([("5", "4"),("9", "14")])
         False
         """
-        pass
+
+        # check last_history is compliant the regex
+        for regex_representation in self.regex_representations:
+            if (re.fullmatch(regex_representation, str(last_history)) == None):
+                return False
+
+        # check last_history is indeed already described
+        if not last_history in self.list_representations:
+            return False
+
+        # check last_history is compliant with dict representations
+        for dict_representation in self.dict_representations:
+            for lh_obs, lh_act in last_history:
+                if lh_obs in dict_representation.keys():
+                    if dict_representation[lh_obs] != lh_act:
+                        return False
+        
+        return True
 
     def next(self, last_history: List[Tuple[observation, action]], last_observation: observation) -> List[action]:
         """
@@ -194,8 +222,37 @@ class linked_joint_history:
         ["43", "6"]
         """
         if self.match(last_history):
-            return []
-        return None
+
+            # check the next action according to list representations
+            list_next_action = None
+            for list_representation in self.list_representations:
+                if last_history in list_representation:
+                    if list_representation[len(last_history)][0] == last_observation:
+                        if list_next_action is None:
+                            list_next_action = list_representation[len(last_history)][1]
+                        elif list_next_action != list_representation[len(last_history)][1]:
+                            return False
+
+            # check the next action according to dict representations
+            dict_next_action = None
+            for dict_representation in self.dict_representations:
+                if last_observation in dict_representation.keys():
+                    if dict_next_action is None:
+                        dict_next_action = self.dict_representations[last_observation]
+                    elif dict_next_action != self.dict_representations[last_observation]:
+                        return False
+            
+            regex_next_action = None
+            for regex_representation in self.regex_representations:
+                # finding the subpart of a regex_representation that matches last_history
+                if(re.findall(regex_representation, str(last_history))[0] == str(last_history)):
+                    next_regex_representation = regex_representation[len(str(last_history)):]
+                    possible_actions = []
+                    for action in self.action_space:
+                        if(re.findall(next_regex_representation, str(action))[0] == str(action)):
+                            possible_actions += [action]
+
+        return False
 
 
 INFINITY = 'INFINITY'
