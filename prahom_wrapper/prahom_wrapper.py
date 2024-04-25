@@ -1,6 +1,7 @@
 import copy
 from dataclasses import dataclass
 from enum import Enum
+import json
 import numpy as np
 import gymnasium
 
@@ -251,7 +252,7 @@ class prahom_wrapper(BaseWrapper):
     ###########################################
     # The PRAHOM additional features:
     ###########################################
-    def train_under_constraints(self, train_env, test_env, mode: ConstraintsRespectMode = ConstraintsRespectMode.CORRECT):
+    def train_under_constraints(self, train_env, test_env, mode: ConstraintsRespectMode = ConstraintsRespectMode.CORRECT, total_step: int = int(2e10)):
         """
         Create a SB3 PPO MLP model for the training loop integrating the constraints
         following modes. (PRAHOM_osh_training)
@@ -272,13 +273,39 @@ class prahom_wrapper(BaseWrapper):
 
         self.tt_mngr = train_test_manager(
             train_env, test_env, num_cpu=4, policy_constraints=agent_to_os_joint_histories, mode=mode)
-        # self.tt_mngr.train()
+        self.tt_mngr.train(total_step=total_step)
 
     def generate_organizational_specifications(self):
         """Play all the joint-policies to get joint-histories to apply KOSIA/GOSIA from these
         """
-        joint_histories = self.tt_mngr.test()
-        
+
+        # Retrieve the total set of joint histories over n_it x n_ep
+        joint_hists: List[List[List[Any]]] = self.tt_mngr.test()
+
+        joint_hists = [joint_history([history(agent_hist) for agent_index, agent_hist in enumerate(
+            joint_hist)]) for joint_hist in joint_hists]
+
+        print(json.dumps(joint_hists))
+
+        os_kosia = self.kosia(joint_hists)
+        os_gosia = self.gosia(os_kosia, joint_hists)
+
+        return os_gosia
+
+    def kosia(self, joint_hists: List[joint_history]) -> organizational_model:
+        """The Knowledge-based Organizational Specification Identification Approach
+        """
+        pass
+
+    def gosia(self, os: organizational_model, joint_hists: List[joint_history]) -> organizational_model:
+        """The general Organizational Specification Inference Approach
+        """
+        pass
+
+    def fusion_organizational_model(self, os_src: organizational_model, os_dest: organizational_model) -> organizational_model:
+        """A function to set the organizational specs. from a os model into another (richer) one
+        """
+        pass
 
 
 if __name__ == "__main__":
@@ -390,6 +417,7 @@ if __name__ == "__main__":
 
     env = prahom_wrapper(aec_env, role_to_jt_histories, agt_to_cons_os)
 
-    env.train_under_constraints(train_env=train_env, test_env=eval_env)
+    env.train_under_constraints(
+        train_env=train_env, test_env=eval_env, total_step=1)
 
     env.generate_organizational_specifications()

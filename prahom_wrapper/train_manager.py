@@ -121,7 +121,7 @@ class train_test_manager:
 
         return predict
 
-    def train(self):
+    def train(self, total_step=int(2e10)):
 
         if not os.path.exists("./logs/best_model.zip"):
 
@@ -134,9 +134,9 @@ class train_test_manager:
                              env=self.env, verbose=1, tensorboard_log="./tensorboard/")
 
             # Almost infinite number of timesteps, but the training will converge at some point
-            self.model.learn(total_timesteps=int(2e10),
+            self.model.learn(total_timesteps=total_step,
                              callback=self.eval_callback, progress_bar=True)
-            self.model.save("policy")
+            # self.model.save("policy")
 
         else:
 
@@ -144,7 +144,7 @@ class train_test_manager:
             self.model = PPO.load(path="./logs/best_model.zip", env=self.env,
                                   tensorboard_log="./tensorboard/")
 
-            self.model.learn(total_timesteps=int(2e10),
+            self.model.learn(total_timesteps=total_step,
                              callback=self.eval_callback, progress_bar=True)
             # self.model.save("policy")
 
@@ -190,7 +190,6 @@ class train_test_manager:
 
         num_it = 1
         num_ep = 1
-        i = 0
 
         frame_list = [Image.fromarray(self.eval_env.render())]
 
@@ -206,7 +205,6 @@ class train_test_manager:
 
                     action, _states = model.predict(concatenate_obs(obs))
                     action = deconcatenate_act(action)
-                    print(obs, action)
 
                     joint_history = add_to_history(joint_history, obs, action)
 
@@ -228,8 +226,7 @@ class train_test_manager:
 
         self.eval_env.close()
 
-        print("Average reward: ", total_reward / num_it)
-
+        # print("Average reward: ", total_reward / num_it)
         print("Finished")
 
         return joint_histories
