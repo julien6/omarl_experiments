@@ -259,7 +259,6 @@ INFINITY = 'INFINITY'
 
 
 class role(str):
-    history().next()
     pass
 
 

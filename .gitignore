@@ -6,3 +6,6 @@ logs/
 tensorboard/
 dist/
 envs_case_studies/**/venv/
+prahom_wrapper/logs
+prahom_wrapper/venv
+prahom_wrapper/tensorboard

@@ -6,8 +6,12 @@ from typing import Any, Callable, Dict, List
 
 INFINITY = 'INFINITY'
 
+class organizational_specification:
+    """The basic class
+    """
+    pass
 
-class role(str):
+class role(str, organizational_specification):
     pass
 
 
@@ -22,7 +26,7 @@ class link_type(str, Enum):
 
 
 @dataclass
-class link:
+class link(organizational_specification):
     source: role
     destination: role
     type: link_type
@@ -37,7 +41,7 @@ class link:
 
 
 @dataclass
-class compatibility:
+class compatibility(organizational_specification):
     source: role
     destination: role
 
@@ -63,7 +67,7 @@ class cardinality:
 
 
 @dataclass
-class group_specifications:
+class group_specifications(organizational_specification):
     roles: List[role]
     sub_groups: Dict[group_tag, 'group_specifications']
     intra_links: List[link]
@@ -95,7 +99,7 @@ class group_specifications:
 
 
 @dataclass
-class structural_specifications:
+class structural_specifications(organizational_specification):
     roles: List[role]
     role_inheritance_relations: Dict[role, List[role]]
     root_groups: Dict[group_tag, group_specifications]
@@ -111,11 +115,11 @@ class structural_specifications:
         )
 
 
-class goal(str):
+class goal(str,organizational_specification):
     pass
 
 
-class mission(str):
+class mission(str,organizational_specification):
     pass
 
 
@@ -126,7 +130,7 @@ class plan_operator(str, Enum):
 
 
 @dataclass
-class plan:
+class plan(organizational_specification):
     goal: goal
     sub_goals: List['goal']
     operator: plan_operator
@@ -143,7 +147,7 @@ class plan:
 
 
 @dataclass
-class social_scheme:
+class social_scheme(organizational_specification):
     goals: List[goal]
     missions: List[mission]
     goals_structure: plan
@@ -169,7 +173,7 @@ class social_scheme_tag(str):
 
 
 @dataclass
-class social_preference:
+class social_preference(organizational_specification):
     preferred_social_scheme: social_scheme_tag
     disfavored_scheme: social_scheme_tag
 
@@ -182,7 +186,7 @@ class social_preference:
 
 
 @dataclass
-class functional_specifications:
+class functional_specifications(organizational_specification):
     social_scheme: Dict[social_scheme_tag, social_scheme]
     social_preferences: List[social_preference]
 
@@ -201,14 +205,14 @@ class time_constraint_type(str, Enum):
 
 
 @dataclass
-class deontic_specification:
+class deontic_specification(organizational_specification):
     role: role
     mission: mission
     time_constraint: time_constraint_type | str = time_constraint_type.ANY
 
 
 @dataclass
-class permission(deontic_specification):
+class permission(deontic_specification, organizational_specification):
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'permission':
         return permission(
@@ -220,7 +224,7 @@ class permission(deontic_specification):
 
 
 @dataclass
-class obligation(deontic_specification):
+class obligation(deontic_specification, organizational_specification):
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'obligation':
         return obligation(
@@ -232,7 +236,7 @@ class obligation(deontic_specification):
 
 
 @dataclass
-class deontic_specifications:
+class deontic_specifications(organizational_specification):
     permissions: List[permission]
     obligations: List[obligation]
 
