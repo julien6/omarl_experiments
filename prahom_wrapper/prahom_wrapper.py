@@ -310,6 +310,93 @@ class prahom_wrapper(BaseWrapper):
 
 if __name__ == "__main__":
 
+    # # 1 - Defining OS and linking them to joint-histories
+
+    # First we may already have some known information as for what the resulting joint-policy should look like.
+    # For instance, we may want some agents not to play some dangerous actions at some point, or we may already
+    # known a promising organizational form to reach the goal even though it is not yet precisely defined.
+
+    # This what we are going to to leveraging links between a formal description of the organization and the
+    # expected behavior.
+
+    # ## 1.1 - Defining organizational specifications
+
+    # The first key concept is the Organizational Specification (OS) which represents a particular expected individual,
+    # social or collective aspect.
+
+    # An OS is a component of the organizational model among these:
+    # - {SS: roles, links, compatibilities, {sub-groups: SS}, role_cardinality, sub-group_cardinality}
+    # - FS: {SCH:{goals, plans, missions, mission_to_goals, mission_to_agent_cardinality}, social_preference_order}
+    # - DS: permissions, obligations
+
+    # A single OS can be described within the organizational model with optional empty components
+
+    role_0_os = organizational_model(
+        structural_specifications=structural_specifications(roles=["role_0"], role_inheritance_relations=None, root_groups=None), functional_specifications=None, deontic_specifications=None)
+
+    # Here `role_0_os` defines any organization where "role_0" is available for agents.
+    # Consequently, `role_0_os` only deals with a role so it is just a singe OS.
+
+    # Note: "None" value indicate any value can be accepted. It can be used if you do not know additional information regarding the ones
+    #       you already provided
+    # Note: If you want to express no value, you must choose {} or [] depending on the expected value format.
+
+    role_01_os = organizational_model(
+        structural_specifications=structural_specifications(roles=["role_0", "role_1"], role_inheritance_relations={"role_1": ["role_0"]}, root_groups=None), functional_specifications=None, deontic_specifications=None)
+
+    # Here `role_01_os` defines any organization where "role_0" and "role_1" are available for agents and we provide a known information
+    # about these roles which is "role_1" inherits from "role_0".
+    # If you had not do it, you could have let it to "None" and it would be then possible to infer it later.
+
+
+    #  ## 1.2 - Linking OS to joint-histories
+
+    # The second key concept is the joint-history...
+    # Let's recap:
+    # - for an agent, a policy associates an observation to an action for an agent to reach a goal.
+    # - for an agent, a history is a tuple describing sequentially all the observation-action at each step until the end of an episode
+    # - for several agents, a joint-policy associates all the agents' observation to the agents' actions at each step enabling them to
+    #   collectively reach their goal. It can be seen as a tuple of policies or a relation taking a vector of observation and associating
+    #   a vector of actions.
+    # - for several agents, a joint-history is a tuple of the agents' histories.
+
+    # The underlying PRAHOM's idea, is to hypothesize if there is a specific OS among the agents' implicit organization, then their
+    # joint-histories (obtained from a same joint-policy) should  match a specific pattern accordingly. Reversely, if some joint-histories
+    # obtained from a same joint-policy share some common features, then the agents' implicit organization should be described into OS
+    # defined according to these common features.
+
+    # Therefore, as we may already known some OS and their expected associated behaviors, we must define all of the possible joint-histories
+    # to describe the impact of an OS.
+    # It is important to note, the number of agent is undefined and we do not known what OS are associated to what agent.
+    # So, when defining associated joint-histories associated to an OS, we must be careful to keep it general.
+
+
+    # Many configuration are to be taken into account:
+
+    # joint_histories_manager is a singleton
+
+    # - Create joint-histories where only one agent has role0
+    jth_r1 = joint_histories_manager.create_joint_histories().with()
+        .agents(max=3).have_histories(history())
+        .agents(min=0,max=1).have_histories(history())
+        .agents(min=0,max=1).have_histories(history())
+    
+    # Creating a history exhaustively can be difficult. Especially, if we just have a general form with many undefined subsequences.
+    # Indeed, we should envision all combination.
+    # So, we can use many short-ways to define an history
+
+    h_r0 = history_manager.create_histories().with()
+        .histories().contains([])
+        .histories(min=1,max=2).contains([])
+
+    # To link joint-histories to OS, we create an Organizational Specification to Histories (OSH) manager
+    # We can link these joint-histories to OS this way:
+
+    osh_mngr = osh_manager()
+    osh_mngr.add(role_01_os, jth_r0)
+
+
+
     # Dummy example
 
     # Histories for Role 1
