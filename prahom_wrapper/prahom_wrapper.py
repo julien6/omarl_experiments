@@ -10,9 +10,9 @@ from pettingzoo.utils.wrappers import BaseWrapper
 from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType
 
 from custom_envs.movingcompany import moving_company_v0
-from history_linked_organizational_model import action, observation, organizational_model, structural_specifications
+from organizational_model import organizational_model, structural_specifications
 from train_manager import train_test_manager
-
+from history_model import observation, action
 
 # Partial Relations with Agent History and Organization Model (PRAHOM)
 
@@ -375,25 +375,33 @@ if __name__ == "__main__":
 
     # joint_histories_manager is a singleton
 
-    # - Create joint-histories where only one agent has role0
-    jth_r1 = joint_histories_manager.create_joint_histories().with()
-        .agents(max=3).have_histories(history())
-        .agents(min=0,max=1).have_histories(history())
-        .agents(min=0,max=1).have_histories(history())
+    # # - Create joint-histories where only one agent has role0
+    # jth_r1 = joint_histories_manager.create_joint_histories().with()
+    #     .agents(max=3).have_histories(history())
+    #     .agents(min=0,max=1).have_histories(history())
+    #     .agents(min=0,max=1).have_histories(history())
     
-    # Creating a history exhaustively can be difficult. Especially, if we just have a general form with many undefined subsequences.
-    # Indeed, we should envision all combination.
-    # So, we can use many short-ways to define an history
+    # # Creating a history exhaustively can be difficult. Especially, if we just have a general form with many undefined subsequences.
+    # # Indeed, we should envision all combination.
+    # # So, we can use many short-ways to define an history
 
-    h_r0 = history_manager.create_histories().with()
-        .histories().contains([])
-        .histories(min=1,max=2).contains([])
+    # h_r0 = history_manager.create_histories().with()
+    #     .histories().match_sequence(f'^[({o1},{a1}),({o1},{None}),.*?,[({o2},{a2})]{1,4})') # create a pattern
+    #     .histories().match_sequence('\[.*?((?:[,\[]\(o1,(?:a1|a2)\)){1,5}).*\]')
+    #     .histories().match_decision_tree()
+    #     .histories(min=1,max=2).contains([])
 
-    # To link joint-histories to OS, we create an Organizational Specification to Histories (OSH) manager
-    # We can link these joint-histories to OS this way:
+    # # Create a general probabilistic tree to gather all input data as several branches
+    # seq = [([o1], [a4,a6]), ((None,None), (1,INF)), ()]
+    # # the general pattern is:
+    # seq = ["([obs1,obs2...], [act1,act2...]){min,max},(Any, Any)*,(ob3,act4){min,max}]
 
-    osh_mngr = osh_manager()
-    osh_mngr.add(role_01_os, jth_r0)
+    # # To link joint-histories to OS, we create an Organizational Specification to Histories (OSH) manager
+    # # We can link these joint-histories to OS this way:
+
+    # osh_mngr = osh_manager()
+    # osh_mngr.add(role_01_os, jth_r0)
+
 
 
 
