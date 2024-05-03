@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass, field
 import dataclasses
 from enum import Enum
@@ -5,10 +6,10 @@ import itertools
 import json
 import random
 from typing import Any, Callable, Dict, List, Tuple, Union
-from organizational_model import cardinality
 import networkx as nx
 import matplotlib.pyplot as plt
 import netgraph
+from pprint import pprint
 
 INFINITY = 'INFINITY'
 WILDCARD_NUMBER = 10000
@@ -34,19 +35,21 @@ class occurrence_number(int):
     pass
 
 
-class indexed_occurences(Dict[int, Union[int, str]]):
+class history(List[Union[observation_label, action_label]]):
+    pass
+
+
+class indexed_occurences(Dict[int, Tuple[int, int]]):
     """A class to describe the number of times an action is chosen and how many times
     over several histories
 
     Examples:
-    {4: 2, 3: 1} means an action has been chosen 4 consecutive times in two histories
-    and that action has been chosen 3 consecutive in just one history/sequence.
+    {4: (2,2), 3: (1,1)} means the action -> observation or observation -> action transition belongs to the
+    4th history where it is played twice; and it also belongs to the 3rd history where it is played once.
 
-    {1:10,2:10,3:10,4:10} means an action can be chosen 1 up to 4 consecutive times over 10 
-    histories/sequences.
-
-    {0: "*",1:"*",2:"*",3:"*",4:"*"} means an action can be chosen 1 up to 4 consecutive times over
-    all histories. It is equivalent to multiplicity {1,4}.
+    {10: (0,3), 1: (1,7)} means the action -> observation or observation -> action transition belongs to the
+    10th history where it is can be played from 0 to 3 times; and it also belongs to the 1st history where
+    it can be played from one to 7 times.
     """
     pass
 
@@ -61,16 +64,16 @@ class histories_graph:
 
     root_observations: List[observation_label]
 
+    sequence_number: int
+
     def __init__(self) -> None:
         self.histories_graph = {}
         self.observation_to_actions = {}
         self.action_to_observations = {}
         self.root_observations = []
+        self.sequence_number = 0
 
-    def add_sequence(self, sequence: List[Union[observation_label, action_label]], occurences: Union[indexed_occurences, cardinality]):
-
-        if type(occurences) == cardinality:
-            occurences = self._generate_indexed_occurences(occurences)
+    def add_sequence(self, sequence: List[Union[observation_label, action_label]], occurences: indexed_occurences = None):
 
         i = 0
         while (i < len(sequence) - 1):
@@ -88,8 +91,15 @@ class histories_graph:
             if act_label not in self.observation_to_actions[obs_label].keys():
                 self.observation_to_actions[obs_label][act_label] = {}
 
+            occ_obs_to_act = copy.copy(occurences)
+            if occurences is None:
+                same_seq_num, _ = self.observation_to_actions[obs_label][act_label].get(
+                    self.sequence_number, (0, 0))
+                occ_obs_to_act = {self.sequence_number: (
+                    same_seq_num+1, same_seq_num+1)}
+
             self.observation_to_actions[obs_label][act_label] = self._add_indexed_occurences(
-                self.observation_to_actions[obs_label][act_label], occurences)
+                self.observation_to_actions[obs_label][act_label], occ_obs_to_act)
 
             i += 1
             next_obs_label = (sequence[i] if sequence[i] is not None else f"#any_obs_{i}") if i < len(
@@ -101,21 +111,94 @@ class histories_graph:
             if next_obs_label not in self.action_to_observations[act_label].keys():
                 self.action_to_observations[act_label][next_obs_label] = {}
 
+            occ_act_to_obs = copy.copy(occurences)
+            if occurences is None:
+                same_seq_num, _ = self.action_to_observations[act_label][next_obs_label].get(
+                    self.sequence_number, (0, 0))
+                occ_act_to_obs = {self.sequence_number: (
+                    same_seq_num+1, same_seq_num+1)}
+
             self.action_to_observations[act_label][next_obs_label] = self._add_indexed_occurences(
-                self.action_to_observations[act_label][next_obs_label], occurences)
+                self.action_to_observations[act_label][next_obs_label], occ_act_to_obs)
+
+        self.sequence_number += 1
+        self.compute_father_to_son_relations()
+        self.compute_root_observations()
 
     def _add_indexed_occurences(self, do_src: indexed_occurences, do_to_add: indexed_occurences) -> indexed_occurences:
-        for occurrence_number, history_number in do_to_add.items():
-            do_src.setdefault(occurrence_number, 0)
-            do_src[occurrence_number] = do_src[occurrence_number] + \
-                history_number if history_number != "*" else "*"
+        do_src.update(do_to_add)
         return do_src
 
-    def _generate_indexed_occurences(self, card: cardinality) -> indexed_occurences:
-        do = {}
-        for i in range(card.lower_bound, card.upper_bound + 1):
-            do[i] = "*"
-        return do
+    def compute_father_to_son_relations(self):
+        self.observation_to_son: Dict[observation_label,
+                                      Dict[observation_label, bool]] = {}
+        for obs1 in list(self.observation_to_actions.keys()):
+            self.observation_to_son.setdefault(obs1, {})
+            act_occ = self.observation_to_actions[obs1]
+            for act_label, obs_to_act_occ in act_occ.items():
+                for obs2, act_to_obs_occ in self.action_to_observations[act_label].items():
+                    min1 = 1
+                    min2 = 1
+                    if len(obs_to_act_occ) > 0 and len(act_to_obs_occ) > 0:
+                        min1 = min([int(x)
+                                   for x in list(obs_to_act_occ.keys())])
+                        min2 = min([int(x)
+                                   for x in list(act_to_obs_occ.keys())])
+                    self.observation_to_son[obs1][obs2] = min(min1, min2) > 0
+
+        self.observation_to_father: Dict[observation_label,
+                                         Dict[observation_label, bool]] = {}
+
+        for obs_father, obs_son_and_mandatory in self.observation_to_son.items():
+            for obs_son, mandatory in obs_son_and_mandatory.items():
+                self.observation_to_father.setdefault(obs_son, {})
+                self.observation_to_father[obs_son][obs_father] = mandatory
+
+    def compute_root_observations(self):
+
+        def is_own_nth_father(obs_root: observation_label):
+            return is_own_nth_father_aux(copy.copy(obs_root), copy.copy(obs_root), explored_fathers=[])
+
+        def is_own_nth_father_aux(curr_obs: observation_label, obs_root: observation_label, explored_fathers: List[observation_label] = []):
+            obs_and_mandatory_fathers = self.observation_to_father.get(
+                curr_obs, None)
+
+            if (obs_and_mandatory_fathers is None):
+                return False
+            else:
+                res = False
+                for obs_father, mandatory in obs_and_mandatory_fathers.items():
+                    # print("father of ", curr_obs, " -> ",obs_father)
+                    if obs_father in explored_fathers:
+                        break
+                    if obs_father == obs_root:
+                        # print("cycled! ", explored_fathers)
+                        dont_have_extra_father = True
+                        for explored_father in explored_fathers:
+                            if len(self.observation_to_father[explored_father].keys()) > 1:
+                                dont_have_extra_father = False
+                                break
+                        if (dont_have_extra_father):
+                            res = True
+                        break
+                    res = res or is_own_nth_father_aux(
+                        obs_father, obs_root, explored_fathers + [obs_father])
+                return res
+
+        root_obs = []
+
+        for obs in list(self.observation_to_actions.keys()):
+            obs_fathers = self.observation_to_father.get(obs, None)
+            if obs_fathers is None:
+                root_obs += [obs]
+            elif is_own_nth_father(obs) and len(self.observation_to_son[obs].keys()) >= 2:
+                for son_observation in self.observation_to_son[obs]:
+                    # if one of the son observations is not in a cycle
+                    if not is_own_nth_father(son_observation):
+                        root_obs += [obs]
+                        break
+
+        self.root_observations = root_obs
 
     def next_actions(self, observation: observation_label) -> Dict[action_label, indexed_occurences]:
         return self.observation_to_actions.get(observation, None)
@@ -295,14 +378,10 @@ class histories_graph:
 
         return text_items
 
-    def generate_graph_plot(self, show: bool = False, save: bool = False):
+    def generate_graph_plot(self, show: bool = False, save: bool = False, remove_optional_edges: bool = False):
 
         # Create a directed graph object
         G = nx.DiGraph()
-
-        # Add nodes
-        G.add_nodes_from(list(hg.observation_to_actions.keys()) +
-                         list(hg.action_to_observations.keys()))
 
         oriented_edges = {}
 
@@ -311,20 +390,27 @@ class histories_graph:
             if act_occ is None:
                 return
             for act_label, act_occurences in act_occ.items():
-                G.add_edge(root_obs_label, act_label)
+                if (not remove_optional_edges or min([int(x) for x in act_occurences.keys()]) > 0):
+                    G.add_edge(root_obs_label, act_label)
                 if (root_obs_label, act_label) in oriented_edges.keys():
                     return
                 oriented_edges[(root_obs_label, act_label)
                                ] = str(act_occurences)
                 obs_occ = hg.action_to_observations.get(act_label)
                 for obs_label, obs_occurences in obs_occ.items():
-                    G.add_edge(act_label, obs_label)
+                    if (not remove_optional_edges or min([int(x) for x in obs_occurences.keys()]) > 0):
+                        G.add_edge(act_label, obs_label)
                     oriented_edges[(act_label, obs_label)
                                    ] = str(obs_occurences)
                     walk_graph(obs_label)
 
-        # Add directed edges
-        walk_graph(list(hg.observation_to_actions.keys())[0])
+        # # Add nodes
+        # G.add_nodes_from(list(hg.observation_to_actions.keys()) +
+        #                  list(hg.action_to_observations.keys()))
+
+        # Add directed edges (source set)
+        for root_obs_label in self.root_observations:
+            walk_graph(root_obs_label)
 
         # Draw the graph
         pos = nx.spring_layout(G)
@@ -356,9 +442,37 @@ class histories_graph:
         if (show):
             plt.show()
 
+    def walk_with_history(self, history: history):
 
-class history(List[Union[observation_label, action_label]]):
-    pass
+        def get_observations(act: Union[action_label, None]):
+            if act is None:
+                return self.root_observations
+            return list(self.action_to_observations[act])
+
+        def get_actions(obs: Union[observation_label, None]):
+            return list(self.observation_to_actions[obs])
+
+        last_obs = None
+        last_act = None
+        i = 0
+        while (i < len(history)):
+
+            curr_obs = history[i]
+            if not curr_obs in get_observations(last_act):
+                return False
+            i += 1
+            last_obs = curr_obs
+
+            if (i == len(history)):
+                break
+
+            curr_act = history[i]
+
+            if not curr_act in get_actions(last_obs):
+                return False
+            i += 1
+            last_act = curr_act
+        return True
 
 
 class histories:
@@ -384,7 +498,8 @@ class histories:
             if next_actions is None:  # the observation is not in the history subset
                 return (None, None)
             if last_act is not None:
-                previous_observations = self.histories_graph.next_observations(act)
+                previous_observations = self.histories_graph.next_observations(
+                    act)
                 if last_obs not in previous_observations:
                     return (None, last_act)
 
@@ -393,8 +508,34 @@ class histories:
                 return (last_obs, None)
             if act not in next_actions.keys():
                 return (last_obs, None)
-            i+=1
+            i += 1
         return last_obs, last_act
+
+    def how_compliant(self, hist: history) -> bool:
+        """Indicates to what extent a given history belongs to the current histories.
+
+        Parameters:
+        hist (history): The given history to be compared with current histories.
+
+        Returns:
+        bool: Whether hist belongs to the current histories
+        float: Similarity percentage (the sub-sequence history that belongs to the current histories
+        over the completed shortest history)
+        history: The sub-sequence history that belongs to the current histories
+        """
+        return False
+
+    def next_actions(self, observation: observation) -> bool:
+        """Indicates to what extent a given history belongs to the current histories.
+
+        Parameters:
+         (history): The given history to be compared with current histories.
+
+        Returns:
+        List[Dict[action]: The list of likely actio to be chosen
+        """
+        return False
+
 
 class histories_factory:
     """The basic class
@@ -410,14 +551,17 @@ class histories_factory:
     def __init__(self) -> None:
         pass
 
-    def new_histories(self) -> 'histories_factory':
+    def new_histories(self, obs_tag_to_obj: Dict[observation_label, Any], act_label_to_obj: Dict[action_label, Any],
+                      graph: histories_graph = None) -> 'histories_factory':
+        self.histories = histories(obs_tag_to_obj, act_label_to_obj, graph)
         return self
 
     def where_all_match(self) -> 'histories_factory':
         return self
 
     def create(self) -> histories:
-        pass
+        self.histories.histories_graph.compute_root_observations()
+        return self.histories
 
 
 if __name__ == '__main__':
@@ -425,19 +569,19 @@ if __name__ == '__main__':
     # histories_factory._instance.new_histories().where_all_match()
 
     hg = histories_graph()
-    # hg.add_sequence([None, None, None], {3: 1})
-    # hg.add_sequence([None, None, "o0", "a0", "o1", "a1", "o2", "a2", "o0", None, None], {3: 1})
 
-    hg.add_sequence(["#any_obs_u0", "#any_act_u1", "#any_obs_u0"], {4: 1})
-    hg.add_sequence(["#any_obs_u0", None, "o0", "a0", "o1"], {1: 1})
-    hg.add_sequence(["o1", "any_act_u2", "#any_obs_u4"], {1: 1})
-    hg.add_sequence(["#any_obs_u4", "#any_act_u7", "#any_obs_u4"], {3: 1})
-    hg.add_sequence(["#any_obs_u4", "#any_act_u8", "o10"], {1: 1})
-    # hg.add_sequence(["any_obs_42",None, "o0", "a0", "o1", "a1", "o2", "a2", "o3"], {1: 1})
-    # hg.add_sequence(["o2", "a7", "o1", "a1", "o2"], {3: 1})
-    # hg.add_sequence(["o2", "a7", "o8"], {1: 1})
+    # adding sequences to mimic a "(Any_obs, Any_act, Any_obs){0,10}"
+    # hg.add_sequence(["o21", "a21", "o31", "a31", "o21"], {1: (0, 10)})
+    # hg.add_sequence(["o21", "a22", "o2"], {1: (0, 10)})
 
-    # print(hg.observation_to_actions)
-    # print(hg.action_to_observations)
+    # # adding a sequence
+    hg.add_sequence(["o1", "a1", "o2", "a3", "o1",
+                    "a1", "o2", "a3", "o1", "a4", "o4"])
 
-    hg.generate_graph_plot(show=True)
+    hg.add_sequence(["o1", "a1", "o2", "a3", "o1", "a4", "o4"])
+
+    # # hg.add_sequence(["o61", "a61", "o31"], {1: (1, 1)})
+    # # hg.add_sequence(["o71", "a71", "o31"], {1: (1, 1)})
+
+    hg.generate_graph_plot(show=True, remove_optional_edges=False)
+    # print(hg.walk_with_history(["o21", "a22", "o2", "a23", "o3"]))
