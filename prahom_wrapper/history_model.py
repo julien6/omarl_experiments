@@ -8,7 +8,6 @@ import random
 from typing import Any, Callable, Dict, List, Tuple, Union
 import networkx as nx
 import matplotlib.pyplot as plt
-import netgraph
 from pprint import pprint
 
 INFINITY = 'INFINITY'
@@ -39,22 +38,49 @@ class history(List[Union[observation_label, action_label]]):
     pass
 
 
-class indexed_occurences(Dict[int, Tuple[int, int]]):
+class indexed_occurences(Dict[int, Tuple[Tuple[int, int], int]]):
     """A class to describe the number of times an action is chosen and how many times
     over several histories
 
-    Examples:
-    {4: (2,2), 3: (1,1)} means the action -> observation or observation -> action transition belongs to the
-    4th history where it is played twice; and it also belongs to the 3rd history where it is played once.
+    It is a compound structure indicating the act/obs -> obs/act transition to be followed to
+    stick with a given history / histories. It a tuple that comprises:
+     - the cardinality: Tuple[int,int]
+     - the priority level: int
 
-    {10: (0,3), 1: (1,7)} means the action -> observation or observation -> action transition belongs to the
+    For any father node (act_1/obs_1), if we have several son nodes (obs_j/act_j) each associated with
+    {h1: ((m11_j,m12_j), p1_j), h2: ((m21_j,m22_j), p2_j), ...}. If we want to stick with
+    history h1, the transition occurs according to the following:
+     
+    1) first select the son node (obs_j/act_j) having the minimal p_j, (obj_minj/act_minj)
+
+    2) let (m11_minj,m12_minj), the cardinality of (obj_minj/act_minj) 
+
+    choose an random number t_minj between m11_minj and m12_minj
+    if t_minj > 0:
+        transition to (obs_minj/act_minj)
+        decrement of 1 (m11_minj,m12_minj) if m11_minj < 0 -> m11_minj = 0 and m12_minj < 0 -> m12_minj = 0
+    else:
+       delete the edge to transition to (obj_minj/act_minj)
+    
+    3) go back to (1)
+        
+    Examples:
+    {4: ((2,2), 0), 3: ((1,1),1)} means the (act1/obs1) -> (obs2/act2) transition belongs to the
+    4th history where it is played exactly twice with a priority level of 0; and it also belongs to the 3rd history where it is played once.
+
+    {10: ((0,3),0), 1: ((1,7),1)} means the action -> observation or observation -> action transition belongs to the
     10th history where it is can be played from 0 to 3 times; and it also belongs to the 1st history where
     it can be played from one to 7 times.
     """
     pass
 
 
-class histories_graph:
+class histories:
+
+    # each observation: Any is associated with a shortcut: str
+    obs_label_to_obj: Dict[observation_label, Any]
+    # each action: Any is associated with a shortcut: str
+    act_label_to_obj: Dict[action_label, Any]
 
     observation_to_actions: Dict[observation_label,
                                  Dict[action_label, indexed_occurences]]
@@ -67,7 +93,9 @@ class histories_graph:
     sequence_number: int
 
     def __init__(self) -> None:
-        self.histories_graph = {}
+        self.histories = {}
+        self.obs_label_to_obj = {}  # each observation: Any is associated with a shortcut: str
+        self.act_label_to_obj = {}  # each action: Any is associated with a shortcut: str
         self.observation_to_actions = {}
         self.action_to_observations = {}
         self.root_observations = []
@@ -475,68 +503,6 @@ class histories_graph:
         return True
 
 
-class histories:
-    """A histories basic class to represent a subset of histories for a single agent.
-    It represents them as a graph where nodes are observations and edges are the action augmented
-    with their occurrence number
-    """
-
-    def __init__(self, obs_tag_to_obj: Dict[observation_label, Any], act_label_to_obj: Dict[action_label, Any],
-                 graph: histories_graph) -> None:
-        self.obs_label_to_obj = {}  # each observation: Any is associated with a shortcut: str
-        self.act_label_to_obj = {}  # each action: Any is associated with a shortcut: str
-        self.histories_graph: histories_graph = {}
-
-    def walk_with_history(self, hist: history):
-        i = 0
-        last_obs = None
-        last_act = None
-        while (i < len(hist)):
-            last_obs = hist[i]
-            i += 1
-            next_actions = self.histories_graph.next_actions(last_obs)
-            if next_actions is None:  # the observation is not in the history subset
-                return (None, None)
-            if last_act is not None:
-                previous_observations = self.histories_graph.next_observations(
-                    act)
-                if last_obs not in previous_observations:
-                    return (None, last_act)
-
-            act = hist[i] if i < len(hist) else None
-            if act is None:
-                return (last_obs, None)
-            if act not in next_actions.keys():
-                return (last_obs, None)
-            i += 1
-        return last_obs, last_act
-
-    def how_compliant(self, hist: history) -> bool:
-        """Indicates to what extent a given history belongs to the current histories.
-
-        Parameters:
-        hist (history): The given history to be compared with current histories.
-
-        Returns:
-        bool: Whether hist belongs to the current histories
-        float: Similarity percentage (the sub-sequence history that belongs to the current histories
-        over the completed shortest history)
-        history: The sub-sequence history that belongs to the current histories
-        """
-        return False
-
-    def next_actions(self, observation: observation) -> bool:
-        """Indicates to what extent a given history belongs to the current histories.
-
-        Parameters:
-         (history): The given history to be compared with current histories.
-
-        Returns:
-        List[Dict[action]: The list of likely actio to be chosen
-        """
-        return False
-
-
 class histories_factory:
     """The basic class
     """
@@ -552,7 +518,7 @@ class histories_factory:
         pass
 
     def new_histories(self, obs_tag_to_obj: Dict[observation_label, Any], act_label_to_obj: Dict[action_label, Any],
-                      graph: histories_graph = None) -> 'histories_factory':
+                      graph: histories = None) -> 'histories_factory':
         self.histories = histories(obs_tag_to_obj, act_label_to_obj, graph)
         return self
 
@@ -560,7 +526,7 @@ class histories_factory:
         return self
 
     def create(self) -> histories:
-        self.histories.histories_graph.compute_root_observations()
+        self.histories.compute_root_observations()
         return self.histories
 
 
@@ -568,7 +534,7 @@ if __name__ == '__main__':
 
     # histories_factory._instance.new_histories().where_all_match()
 
-    hg = histories_graph()
+    hg = histories()
 
     # adding sequences to mimic a "(Any_obs, Any_act, Any_obs){0,10}"
     # hg.add_sequence(["o21", "a21", "o31", "a31", "o21"], {1: (0, 10)})
@@ -584,4 +550,4 @@ if __name__ == '__main__':
     # # hg.add_sequence(["o71", "a71", "o31"], {1: (1, 1)})
 
     hg.generate_graph_plot(show=True, remove_optional_edges=False)
-    # print(hg.walk_with_history(["o21", "a22", "o2", "a23", "o3"]))
+    print(hg.walk_with_history(["o1", "a1", "o2", "a3", "o1", "a4", "o4"]))
