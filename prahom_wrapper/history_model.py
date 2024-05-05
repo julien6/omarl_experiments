@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 import networkx as nx
 import matplotlib.pyplot as plt
 from pprint import pprint
+from organizational_model import cardinality, os_encoder
 
 INFINITY = 'INFINITY'
 WILDCARD_NUMBER = 10000
@@ -38,41 +39,51 @@ class history(List[Union[observation_label, action_label]]):
     pass
 
 
-class indexed_occurences(Dict[int, Tuple[Tuple[int, int], int]]):
-    """A class to describe the number of times an action is chosen and how many times
-    over several histories
-
-    It is a compound structure indicating the act/obs -> obs/act transition to be followed to
-    stick with a given history / histories. It a tuple that comprises:
-     - the cardinality: Tuple[int,int]
-     - the priority level: int
-
-    For any father node (act_1/obs_1), if we have several son nodes (obs_j/act_j) each associated with
-    {h1: ((m11_j,m12_j), p1_j), h2: ((m21_j,m22_j), p2_j), ...}. If we want to stick with
-    history h1, the transition occurs according to the following:
-     
-    1) first select the son node (obs_j/act_j) having the minimal p_j, (obj_minj/act_minj)
-
-    2) let (m11_minj,m12_minj), the cardinality of (obj_minj/act_minj) 
-
-    choose an random number t_minj between m11_minj and m12_minj
-    if t_minj > 0:
-        transition to (obs_minj/act_minj)
-        decrement of 1 (m11_minj,m12_minj) if m11_minj < 0 -> m11_minj = 0 and m12_minj < 0 -> m12_minj = 0
-    else:
-       delete the edge to transition to (obj_minj/act_minj)
-    
-    3) go back to (1)
-        
-    Examples:
-    {4: ((2,2), 0), 3: ((1,1),1)} means the (act1/obs1) -> (obs2/act2) transition belongs to the
-    4th history where it is played exactly twice with a priority level of 0; and it also belongs to the 3rd history where it is played once.
-
-    {10: ((0,3),0), 1: ((1,7),1)} means the action -> observation or observation -> action transition belongs to the
-    10th history where it is can be played from 0 to 3 times; and it also belongs to the 1st history where
-    it can be played from one to 7 times.
+class occurence_data:
+    """A utilitary class to save data about how the transition was played and
+    how to play it according to patterns.
     """
-    pass
+
+    def __init__(self, ordinal_crossing: List[int] = [], global_cardinality: cardinality = cardinality(1, 1),
+                 cardinalities: Dict[int, cardinality] = {}, global_priority: int = 0,
+                 priorities: Dict[int, int] = {}):
+        # used for exhaustive description (e.g from given histories)
+        self.ordinal_crossing: List[int] = ordinal_crossing
+
+        # used for short way description (e.g from patterns)
+        # indicates the expected cardinality for all cycles
+        self.global_cardinality = global_cardinality
+        # indicates the expected cardinality for given cycles
+        self.cardinalities = cardinalities
+        # indicates the expected priority for all cycles
+        self.global_priority = global_priority
+        self.priorities = priorities  # indicates the expected priority for given cycles
+
+    def compute_pattern_from_data(self) -> None:
+        self.global_cardinality = cardinality(
+            len(self.ordinal_crossing), len(self.ordinal_crossing))
+        self.cardinalities = {
+            cycle_num: cardinality(1, 1) for cycle_num, crossing_num
+            in enumerate(self.ordinal_crossing)
+        }
+        self.priorities = {cycle_num: crossing_num for cycle_num, crossing_num
+                           in enumerate(self.ordinal_crossing)
+                           }
+
+    def __repr__(self) -> str:
+        return json.dumps(self.__dict__, indent=0, cls=os_encoder)
+
+    def __str__(self) -> str:
+        return json.dumps(self.__dict__, indent=0, cls=os_encoder)
+
+
+class indexed_occurences(Dict[int, occurence_data]):
+
+    def __str__(self) -> str:
+        return str({hist_num: occ.__str__() for hist_num, occ in self.items()})
+
+    def __repr__(self) -> str:
+        return str({hist_num: occ.__str__() for hist_num, occ in self.items()})
 
 
 class histories:
@@ -101,33 +112,48 @@ class histories:
         self.root_observations = []
         self.sequence_number = 0
 
-    def add_sequence(self, sequence: List[Union[observation_label, action_label]], occurences: indexed_occurences = None):
+    def add_histories(self, histories: List[List[Union[observation_label, action_label]]]):
+        for history in histories:
+            self.add_history(history)
+
+    def add_history(self, sequence: List[Union[observation_label, action_label]], occurences: indexed_occurences = None):
 
         i = 0
         while (i < len(sequence) - 1):
 
-            obs_label = (sequence[i] if sequence[i] is not None else f"#any_obs_{i}") if i < len(
-                sequence) else f"#any_obs_{i}"
+            # processing the action -> observations
+
+            obs_label = (sequence[i] if sequence[i] is not None else f"#obs_{i}") if i < len(
+                sequence) else f"#obs_{i}"
             i += 1
 
-            act_label = (sequence[i] if sequence[i] is not None else f"#any_act_{i}") if i < len(
-                sequence) else f"#any_act_{i}"
+            act_label = (sequence[i] if sequence[i] is not None else f"#act_{i}") if i < len(
+                sequence) else f"#act_{i}"
 
             if obs_label not in self.observation_to_actions.keys():
                 self.observation_to_actions[obs_label] = {}
 
             if act_label not in self.observation_to_actions[obs_label].keys():
-                self.observation_to_actions[obs_label][act_label] = {}
+                self.observation_to_actions[obs_label][act_label] = {
+                    self.sequence_number: occurence_data(ordinal_crossing=[])
+                }
+
+            if self.sequence_number not in self.observation_to_actions[obs_label][act_label].keys():
+                self.observation_to_actions[obs_label][act_label][self.sequence_number] = occurence_data(
+                    ordinal_crossing=[])
+
+            self.observation_to_actions[obs_label][act_label][self.sequence_number].ordinal_crossing += [i]
+            self.observation_to_actions[obs_label][act_label][self.sequence_number]\
+                .compute_pattern_from_data()
 
             occ_obs_to_act = copy.copy(occurences)
             if occurences is None:
-                same_seq_num, _ = self.observation_to_actions[obs_label][act_label].get(
-                    self.sequence_number, (0, 0))
-                occ_obs_to_act = {self.sequence_number: (
-                    same_seq_num+1, same_seq_num+1)}
+                occ_obs_to_act = {}
 
             self.observation_to_actions[obs_label][act_label] = self._add_indexed_occurences(
                 self.observation_to_actions[obs_label][act_label], occ_obs_to_act)
+
+            # processing the action -> observations
 
             i += 1
             next_obs_label = (sequence[i] if sequence[i] is not None else f"#any_obs_{i}") if i < len(
@@ -137,14 +163,21 @@ class histories:
                 self.action_to_observations[act_label] = {}
 
             if next_obs_label not in self.action_to_observations[act_label].keys():
-                self.action_to_observations[act_label][next_obs_label] = {}
+                self.action_to_observations[act_label][next_obs_label] = {
+                    self.sequence_number: occurence_data(ordinal_crossing=[])
+                }
+
+            if self.sequence_number not in self.action_to_observations[act_label][next_obs_label].keys():
+                self.action_to_observations[act_label][next_obs_label][self.sequence_number] = occurence_data(
+                    ordinal_crossing=[])
+
+            self.action_to_observations[act_label][next_obs_label][self.sequence_number].ordinal_crossing += [i]
+            self.action_to_observations[act_label][next_obs_label][self.sequence_number]\
+                .compute_pattern_from_data()
 
             occ_act_to_obs = copy.copy(occurences)
             if occurences is None:
-                same_seq_num, _ = self.action_to_observations[act_label][next_obs_label].get(
-                    self.sequence_number, (0, 0))
-                occ_act_to_obs = {self.sequence_number: (
-                    same_seq_num+1, same_seq_num+1)}
+                occ_act_to_obs = {}
 
             self.action_to_observations[act_label][next_obs_label] = self._add_indexed_occurences(
                 self.action_to_observations[act_label][next_obs_label], occ_act_to_obs)
@@ -406,30 +439,39 @@ class histories:
 
         return text_items
 
-    def generate_graph_plot(self, show: bool = False, save: bool = False, remove_optional_edges: bool = False):
+    def generate_graph_plot(self, show: bool = False, save: bool = False, transition_data: List[str] = ['global_cardinality']):
 
         # Create a directed graph object
         G = nx.DiGraph()
 
         oriented_edges = {}
 
+        def str_occ_info(occ_data: occurence_data, data_to_display: List[str]) -> str:
+            res = '{'
+
+            for hist_num, occ_data in occ_data.items():
+                res += str(hist_num) + ':{'
+                for data_name, data_value in occ_data.__dict__.items():
+                    if data_name in data_to_display:
+                        res += f'{data_name}:{data_value.__str__()},'
+                res = res[:-1] + '},\n'
+            return res[:-2] + '}'
+
         def walk_graph(root_obs_label: observation_label):
             act_occ = hg.observation_to_actions.get(root_obs_label, None)
             if act_occ is None:
                 return
             for act_label, act_occurences in act_occ.items():
-                if (not remove_optional_edges or min([int(x) for x in act_occurences.keys()]) > 0):
-                    G.add_edge(root_obs_label, act_label)
+                G.add_edge(root_obs_label, act_label)
                 if (root_obs_label, act_label) in oriented_edges.keys():
                     return
                 oriented_edges[(root_obs_label, act_label)
-                               ] = str(act_occurences)
+                               ] = str(str_occ_info(act_occurences, transition_data))
                 obs_occ = hg.action_to_observations.get(act_label)
                 for obs_label, obs_occurences in obs_occ.items():
-                    if (not remove_optional_edges or min([int(x) for x in obs_occurences.keys()]) > 0):
-                        G.add_edge(act_label, obs_label)
+                    G.add_edge(act_label, obs_label)
                     oriented_edges[(act_label, obs_label)
-                                   ] = str(obs_occurences)
+                                   ] = str(str_occ_info(obs_occurences, transition_data))
                     walk_graph(obs_label)
 
         # # Add nodes
@@ -537,17 +579,27 @@ if __name__ == '__main__':
     hg = histories()
 
     # adding sequences to mimic a "(Any_obs, Any_act, Any_obs){0,10}"
-    # hg.add_sequence(["o21", "a21", "o31", "a31", "o21"], {1: (0, 10)})
-    # hg.add_sequence(["o21", "a22", "o2"], {1: (0, 10)})
+    # hg.add_history(["o21", "a21", "o31", "a31", "o21"], {1: (0, 10)})
+    # hg.add_history(["o21", "a22", "o2"], {1: (0, 10)})
 
     # # adding a sequence
-    hg.add_sequence(["o1", "a1", "o2", "a3", "o1",
-                    "a1", "o2", "a3", "o1", "a4", "o4"])
+    # hg.add_history(["o1", "a1", "o2", "a3", "o1",
+    #                 "a1", "o2", "a3", "o1", "a4", "o4"])
 
-    hg.add_sequence(["o1", "a1", "o2", "a3", "o1", "a4", "o4"])
+    # hg.add_history(["o1", "a1", "o2", "a3", "o1", "a4", "o4"])
 
-    # # hg.add_sequence(["o61", "a61", "o31"], {1: (1, 1)})
-    # # hg.add_sequence(["o71", "a71", "o31"], {1: (1, 1)})
+    # hg.add_history(["o0", "a0", "o1", "a1", "o1",
+    #                 "a1", "o1", "a1", "o2", "a2"])
 
-    hg.generate_graph_plot(show=True, remove_optional_edges=False)
-    print(hg.walk_with_history(["o1", "a1", "o2", "a3", "o1", "a4", "o4"]))
+    hg.add_history(["o0", "a0", "o1", "a1", "o1",
+                   "a1", "o1", "a1", "o2", "a2"])
+    hg.add_histories([["o0", "a0", "o1"], ["o2", "a1", "o3"]])
+
+    # hg.add_history(["o0", "a0", "o1", "a1", "o1", "a1", "o1", "a1",
+    #                 "o2", "a0", "o1", "a1", "o1", "a1", "o1", "a1", "o2", "a2"])
+
+    # # hg.add_history(["o61", "a61", "o31"], {1: (1, 1)})
+    # # hg.add_history(["o71", "a71", "o31"], {1: (1, 1)})
+
+    hg.generate_graph_plot(show=True)
+    # print(hg.walk_with_history(["o21", "a22", "o2", "a23", "o3"]))

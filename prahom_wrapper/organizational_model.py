@@ -6,10 +6,12 @@ from typing import Any, Callable, Dict, List
 
 INFINITY = 'INFINITY'
 
+
 class organizational_specification:
     """The basic class
     """
     pass
+
 
 class role(str, organizational_specification):
     pass
@@ -57,6 +59,12 @@ class compatibility(organizational_specification):
 class cardinality:
     lower_bound: int | str
     upper_bound: int | str
+
+    def __str__(self) -> str:
+        return f'({self.lower_bound},{self.upper_bound})'
+
+    def __repr__(self) -> str:
+        return f'({self.lower_bound},{self.upper_bound})'
 
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'cardinality':
@@ -115,11 +123,11 @@ class structural_specifications(organizational_specification):
         )
 
 
-class goal(str,organizational_specification):
+class goal(str, organizational_specification):
     pass
 
 
-class mission(str,organizational_specification):
+class mission(str, organizational_specification):
     pass
 
 
@@ -264,6 +272,15 @@ class organizational_model:
             deontic_specifications=deontic_specifications.from_dict(
                 d['deontic_specifications'])
         )
+
+
+class os_encoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, dict):
+            return
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        return super().default(o)
 
 
 if __name__ == "__main__":
@@ -434,14 +451,6 @@ if __name__ == "__main__":
     print(org_model)
 
     print("="*30)
-
-    class os_encoder(json.JSONEncoder):
-        def default(self, o):
-            if isinstance(o, dict):
-                return
-            if dataclasses.is_dataclass(o):
-                return dataclasses.asdict(o)
-            return super().default(o)
 
     json.dump(dataclasses.asdict(org_model), open("organizational_model.json", "w"),
               indent=4, cls=os_encoder)
