@@ -9,7 +9,10 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 import networkx as nx
 import matplotlib.pyplot as plt
 from pprint import pprint
+
+import numpy as np
 from organizational_model import cardinality, os_encoder
+from PIL import Image
 
 INFINITY = 'INFINITY'
 WILDCARD_NUMBER = 10000
@@ -439,7 +442,7 @@ class histories:
 
         return text_items
 
-    def generate_graph_plot(self, show: bool = False, save: bool = False, transition_data: List[str] = ['global_cardinality']):
+    def generate_graph_plot(self, show: bool = False, render_rgba: bool = False, save: bool = False, transition_data: List[str] = ['global_cardinality']):
 
         # Create a directed graph object
         G = nx.DiGraph()
@@ -458,7 +461,7 @@ class histories:
             return res[:-2] + '}'
 
         def walk_graph(root_obs_label: observation_label):
-            act_occ = hg.observation_to_actions.get(root_obs_label, None)
+            act_occ = self.observation_to_actions.get(root_obs_label, None)
             if act_occ is None:
                 return
             for act_label, act_occurences in act_occ.items():
@@ -467,7 +470,7 @@ class histories:
                     return
                 oriented_edges[(root_obs_label, act_label)
                                ] = str(str_occ_info(act_occurences, transition_data))
-                obs_occ = hg.action_to_observations.get(act_label)
+                obs_occ = self.action_to_observations.get(act_label)
                 for obs_label, obs_occurences in obs_occ.items():
                     G.add_edge(act_label, obs_label)
                     oriented_edges[(act_label, obs_label)
@@ -511,6 +514,19 @@ class histories:
                         bbox_inches='tight', pad_inches=0)
         if (show):
             plt.show()
+
+        if (render_rgba):
+            # fig.canvas.draw()
+            # return Image.frombytes('RGB',
+            # fig.canvas.get_width_height(),fig.canvas.tostring_rgb())
+
+            fig.canvas.draw()  # Draw the canvas, cache the renderer
+            image_flat = np.frombuffer(
+                fig.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+            # NOTE: reversed converts (W, H) from get_width_height to (H, W)
+            image = image_flat.reshape(
+                *reversed(fig.canvas.get_width_height()), 3)  # (H, W, 3)
+            return image
 
     def walk_with_history(self, history: history):
 
@@ -591,9 +607,10 @@ if __name__ == '__main__':
     # hg.add_history(["o0", "a0", "o1", "a1", "o1",
     #                 "a1", "o1", "a1", "o2", "a2"])
 
+    hg = histories()
     hg.add_history(["o0", "a0", "o1", "a1", "o1",
                    "a1", "o1", "a1", "o2", "a2"])
-    hg.add_histories([["o0", "a0", "o1"], ["o2", "a1", "o3"]])
+    graph_plot = hg.generate_graph_plot(render_rgba=True)
 
     # hg.add_history(["o0", "a0", "o1", "a1", "o1", "a1", "o1", "a1",
     #                 "o2", "a0", "o1", "a1", "o1", "a1", "o1", "a1", "o2", "a2"])
@@ -601,5 +618,5 @@ if __name__ == '__main__':
     # # hg.add_history(["o61", "a61", "o31"], {1: (1, 1)})
     # # hg.add_history(["o71", "a71", "o31"], {1: (1, 1)})
 
-    hg.generate_graph_plot(show=True)
+    # hg.generate_graph_plot(show=True)
     # print(hg.walk_with_history(["o21", "a22", "o2", "a23", "o3"]))
