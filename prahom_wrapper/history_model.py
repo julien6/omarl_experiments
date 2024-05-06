@@ -13,6 +13,7 @@ from pprint import pprint
 import numpy as np
 from organizational_model import cardinality, os_encoder
 from PIL import Image
+from pattern_utils import parse_str_sequence, sequence
 
 INFINITY = 'INFINITY'
 WILDCARD_NUMBER = 10000
@@ -40,6 +41,11 @@ class occurrence_number(int):
 
 class history(List[Union[observation_label, action_label]]):
     pass
+
+
+class pattern_histories:
+    def __init__(self, string_pattern: str) -> None:
+        self.pattern = parse_str_sequence(string_pattern)
 
 
 class occurence_data:
@@ -184,6 +190,70 @@ class histories:
 
             self.action_to_observations[act_label][next_obs_label] = self._add_indexed_occurences(
                 self.action_to_observations[act_label][next_obs_label], occ_act_to_obs)
+
+        self.sequence_number += 1
+        self.compute_father_to_son_relations()
+        self.compute_root_observations()
+
+    def add_pattern(self, pattern: Union[str, pattern_histories]):
+
+        if type(pattern) == str:
+            pattern = pattern_histories(pattern)
+
+        seq = pattern.pattern
+
+        def add_pattern_aux(sequence_pattern: sequence, cardinalities: List[cardinality]):
+            data = sequence_pattern.data
+            if type(data[0]) == sequence:
+                cardinalities = [sequence_pattern.cardinality] + cardinalities
+                for seq in data:
+                    add_pattern_aux(seq, cardinalities)
+
+            elif type(data[0]) == str:
+                i = 0
+                while (i < len(data)):
+                    obs_label = data[i]
+                    i += 1
+
+                    if (i == len(data)):
+                        break
+
+                    act_label = data[i]
+
+                    card = [
+                        sequence_pattern.cardinality] + cardinalities
+                    card = {i: c for i, c in enumerate(card)}
+
+                    if obs_label not in self.observation_to_actions.keys():
+                        self.observation_to_actions[obs_label] = {}
+
+                    if act_label not in self.observation_to_actions[obs_label].keys():
+                        self.observation_to_actions[obs_label][act_label] = {
+                            self.sequence_number: occurence_data(
+                                cardinalities=card)
+                        }
+
+                    if self.sequence_number not in self.observation_to_actions[obs_label][act_label].keys():
+                        self.observation_to_actions[obs_label][act_label][self.sequence_number] = occurence_data(
+                            cardinalities=card)
+
+                    i += 1
+                    next_obs_label = data[i]
+
+                    if act_label not in self.action_to_observations.keys():
+                        self.action_to_observations[act_label] = {}
+
+                    if next_obs_label not in self.action_to_observations[act_label].keys():
+                        self.action_to_observations[act_label][next_obs_label] = {
+                            self.sequence_number: occurence_data(
+                                cardinalities=card)
+                        }
+
+                    if self.sequence_number not in self.action_to_observations[act_label][next_obs_label].keys():
+                        self.action_to_observations[act_label][next_obs_label][self.sequence_number] = occurence_data(
+                            cardinalities=card)
+
+        add_pattern_aux(seq, [])
 
         self.sequence_number += 1
         self.compute_father_to_son_relations()
@@ -608,9 +678,13 @@ if __name__ == '__main__':
     #                 "a1", "o1", "a1", "o2", "a2"])
 
     hg = histories()
-    hg.add_history(["o0", "a0", "o1", "a1", "o1",
-                   "a1", "o1", "a1", "o2", "a2"])
-    graph_plot = hg.generate_graph_plot(render_rgba=True)
+    # hg.add_history(["o0", "a0", "o1", "a1", "o1",
+    #                "a1", "o1", "a1", "o2", "a2"])
+
+    hg.add_pattern('[[o0,a0,o1](1,1),[o1,a1,o2,a2,o1](1,1)](1,2)')
+
+    graph_plot = hg.generate_graph_plot(
+        show=True, transition_data=["cardinalities"])
 
     # hg.add_history(["o0", "a0", "o1", "a1", "o1", "a1", "o1", "a1",
     #                 "o2", "a0", "o1", "a1", "o1", "a1", "o1", "a1", "o2", "a2"])

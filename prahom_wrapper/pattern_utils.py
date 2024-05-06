@@ -1,7 +1,8 @@
 import itertools
 import random
-from typing import List, Union
+from typing import List, Tuple, Union
 from organizational_model import cardinality
+import re
 
 
 class token(str):
@@ -36,9 +37,9 @@ class sequence:
         return render_aux(self, -1)
 
 
-s1 = sequence(["0", "1", "2", "3"], cardinality(2, 2))
-s2 = sequence(["6", "3", "9"], cardinality(1, 1))
-s3 = sequence([s1, s2], cardinality(1, 1))
+# s1 = sequence(["0", "1", "2", "3"], cardinality(2, 2))
+# s2 = sequence(["6", "3", "9"], cardinality(1, 1))
+# s3 = sequence([s1, s2], cardinality(1, 1))
 
 # print(s3)
 
@@ -128,7 +129,60 @@ def parse_tokens(tokens: List[token]) -> sequence:
     return sequenced
 
 
-print(parse_tokens(["1", "2", "3", "1", "2", "3"]))
+# print(parse_tokens(["1", "2", "3", "1", "2", "3"]))
 
 
 # print(parse_tokens(read_sequenced_tokens(s3)))
+
+
+str_seq = "[[o0,a1,o2](1,2),[o2,a2,o3](1,1),[o3,a4,o4](0,1)](1,1)"
+
+
+def eval_str_sequence(pattern_string: str):
+
+    regex = r"(\[[^\]^\[]*\]\(.*?,.*?\))"
+
+    matches = re.findall(regex, pattern_string)
+
+    for group in matches:
+        labels, multiplicity = group.split("](")
+        labels = ",".join(["\""+lab + "\"" if not "|" in lab else '[' + ",".join(
+            ['"'+l+'"' for l in lab.split("|")]) + ']' for lab in labels[1:].split(",")])
+        labels = "[" + labels + "]"
+        multiplicity = "(" + multiplicity
+        new_group = '(' + labels + "," + multiplicity + ')'
+        pattern_string = pattern_string.replace(group, new_group)
+
+    matches = re.findall(r"(\[.*?\])(\(.*?,.*?\))", pattern_string)
+
+    for group in matches:
+        seqs, multiplicity = group
+        new_group = '(' + seqs + ',' + multiplicity + ')'
+        pattern_string = pattern_string.replace(seqs+multiplicity, new_group)
+
+    return eval(pattern_string)
+
+
+def parse_str_sequence(pattern_string: str) -> sequence:
+
+    eval_str_seq = eval_str_sequence(pattern_string)
+
+    def parse_str_sequence_aux(eval_seq: Tuple) -> sequence:
+        values = eval_seq[0]
+        is_all_labels = True
+        for v in values:
+            if type(v) != str:
+                is_all_labels = False
+                break
+        if is_all_labels:
+            return sequence(values, cardinality(eval_seq[1][0], eval_seq[1][1]))
+        else:
+            seq = []
+            for v in values:
+                seq += [parse_str_sequence_aux(v)]
+            return sequence(seq, cardinality(eval_seq[1][0], eval_seq[1][1]))
+
+    return parse_str_sequence_aux(eval_str_seq)
+
+
+# print(parse_str_sequence(str_seq))
