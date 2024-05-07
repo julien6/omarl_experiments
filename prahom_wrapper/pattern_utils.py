@@ -32,7 +32,7 @@ class sequence:
                 for s in seq.data:
                     num_seq += 1
                     rendered_seqs += [render_aux(s, num_seq)]
-                return f"s{num_seq + 1}=(" + ", ".join(rendered_seqs) + f", ({seq.cardinality.lower_bound}, {seq.cardinality.upper_bound}))"
+                return f"s{num_seq + 1}=([" + ",".join(rendered_seqs) + f"], ({seq.cardinality.lower_bound}, {seq.cardinality.upper_bound}))"
 
         return render_aux(self, -1)
 
@@ -150,6 +150,7 @@ def eval_str_sequence(pattern_string: str):
             ['"'+l+'"' for l in lab.split("|")]) + ']' for lab in labels[1:].split(",")])
         labels = "[" + labels + "]"
         multiplicity = "(" + multiplicity
+        multiplicity = multiplicity.replace(",", "\",\"").replace("(", "(\"").replace(")", "\")")
         new_group = '(' + labels + "," + multiplicity + ')'
         pattern_string = pattern_string.replace(group, new_group)
 
@@ -160,12 +161,16 @@ def eval_str_sequence(pattern_string: str):
         new_group = '(' + seqs + ',' + multiplicity + ')'
         pattern_string = pattern_string.replace(seqs+multiplicity, new_group)
 
+    pattern_string = pattern_string.replace("))(", ")),(")
+
     return eval(pattern_string)
 
 
 def parse_str_sequence(pattern_string: str) -> sequence:
 
     eval_str_seq = eval_str_sequence(pattern_string)
+
+    print(eval_str_seq)
 
     def parse_str_sequence_aux(eval_seq: Tuple) -> sequence:
         values = eval_seq[0]
