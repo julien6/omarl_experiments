@@ -14,15 +14,15 @@ class token(str):
         return str(self)
 
 
-class sequence:
+class history_pattern:
 
-    def __init__(self, data: Union[List[token], List['sequence']], cardinality: cardinality) -> None:
+    def __init__(self, data: Union[List[token], List['history_pattern']], cardinality: cardinality) -> None:
         self.data = data
         self.cardinality = cardinality
 
     def __str__(self) -> str:
 
-        def render_aux(seq: sequence, num_seq: int) -> str:
+        def render_aux(seq: history_pattern, num_seq: int) -> str:
             if (len(seq.data) == 0):
                 return f's0=([],(1,1))'
             if type(seq.data[0]) == str:
@@ -37,16 +37,16 @@ class sequence:
         return render_aux(self, -1)
 
 
-# s1 = sequence(["0", "1", "2", "3"], cardinality(2, 2))
-# s2 = sequence(["6", "3", "9"], cardinality(1, 1))
-# s3 = sequence([s1, s2], cardinality(1, 1))
+# s1 = history_pattern(["0", "1", "2", "3"], cardinality(2, 2))
+# s2 = history_pattern(["6", "3", "9"], cardinality(1, 1))
+# s3 = history_pattern([s1, s2], cardinality(1, 1))
 
 # print(s3)
 
 
-def read_sequenced_tokens(sequenced_tokens: sequence) -> List[token]:
+def read_history_patternd_tokens(history_patternd_tokens: history_pattern) -> List[token]:
 
-    def render_aux(seq: sequence, num_seq: int) -> List[token]:
+    def render_aux(seq: history_pattern, num_seq: int) -> List[token]:
         if type(seq.data[0]) == str:
             return seq.data * (seq.cardinality.lower_bound + random.randint(0, seq.cardinality.upper_bound - seq.cardinality.lower_bound))
         else:
@@ -56,15 +56,15 @@ def read_sequenced_tokens(sequenced_tokens: sequence) -> List[token]:
                 rendered_seqs += [render_aux(s, num_seq)]
             return rendered_seqs * (seq.cardinality.lower_bound + random.randint(0, seq.cardinality.upper_bound - seq.cardinality.lower_bound))
 
-    return list(itertools.chain.from_iterable(render_aux(sequenced_tokens, -1)))
+    return list(itertools.chain.from_iterable(render_aux(history_patternd_tokens, -1)))
 
 
-# print(read_sequenced_tokens(s3))
+# print(read_history_patternd_tokens(s3))
 
 
-def incr_card_sequenced_tokens(sequenced_tokens: sequence, seq_to_update: List[token]) -> List[token]:
+def incr_card_history_patternd_tokens(history_patternd_tokens: history_pattern, seq_to_update: List[token]) -> List[token]:
 
-    def incr_aux(seq: sequence, num_seq: int) -> List[token]:
+    def incr_aux(seq: history_pattern, num_seq: int) -> List[token]:
         if type(seq.data[0]) == str:
             sq = seq.data * (seq.cardinality.lower_bound + random.randint(0,
                              seq.cardinality.upper_bound - seq.cardinality.lower_bound))
@@ -84,10 +84,10 @@ def incr_card_sequenced_tokens(sequenced_tokens: sequence, seq_to_update: List[t
                 seq.cardinality.upper_bound += 1
             return sq
 
-    return list(itertools.chain.from_iterable(incr_aux(sequenced_tokens, -1)))
+    return list(itertools.chain.from_iterable(incr_aux(history_patternd_tokens, -1)))
 
 
-def is_subsequence(b, l):
+def is_subhistory_pattern(b, l):
     j = 0
     ss = []
 
@@ -107,38 +107,37 @@ def is_subsequence(b, l):
     return (False, 0)
 
 
-def parse_tokens(tokens: List[token]) -> sequence:
+def parse_tokens(tokens: List[token]) -> history_pattern:
 
     tmp_seq = []
-    sequenced = sequence([], cardinality(1, 1))
+    history_patternd = history_pattern([], cardinality(1, 1))
     last_added_seq_index = 0
     for t in tokens:
         tmp_seq += [t]
         print(tmp_seq, tokens[0:last_added_seq_index + 1])
-        is_ss, ss_index = is_subsequence(
+        is_ss, ss_index = is_subhistory_pattern(
             tokens[0:last_added_seq_index + 1], tmp_seq)
         if is_ss:
             print(tmp_seq, ss_index, last_added_seq_index)
             if ss_index == last_added_seq_index:
-                incr_card_sequenced_tokens(sequenced, tmp_seq)
+                incr_card_history_patternd_tokens(history_patternd, tmp_seq)
                 last_added_seq_index += len(tmp_seq)
         else:
-            sequenced.data += tmp_seq
+            history_patternd.data += tmp_seq
             last_added_seq_index += len(tmp_seq) - 1
             tmp_seq = []
-    return sequenced
+    return history_patternd
 
 
 # print(parse_tokens(["1", "2", "3", "1", "2", "3"]))
 
 
-# print(parse_tokens(read_sequenced_tokens(s3)))
+# print(parse_tokens(read_history_patternd_tokens(s3)))
 
 
-str_seq = "[[o0,a1,o2](1,2),[o2,a2,o3](1,1),[o3,a4,o4](0,1)](1,1)"
+def eval_str_history_pattern(pattern_string: str):
 
-
-def eval_str_sequence(pattern_string: str):
+    pattern_string = pattern_string.replace('#any_seq','[#any_obs,#any_act](1,*)')
 
     regex = r"(\[[^\]^\[]*\]\(.*?,.*?\))"
 
@@ -150,7 +149,8 @@ def eval_str_sequence(pattern_string: str):
             ['"'+l+'"' for l in lab.split("|")]) + ']' for lab in labels[1:].split(",")])
         labels = "[" + labels + "]"
         multiplicity = "(" + multiplicity
-        multiplicity = multiplicity.replace(",", "\",\"").replace("(", "(\"").replace(")", "\")")
+        multiplicity = multiplicity.replace(
+            ",", "\",\"").replace("(", "(\"").replace(")", "\")")
         new_group = '(' + labels + "," + multiplicity + ')'
         pattern_string = pattern_string.replace(group, new_group)
 
@@ -163,16 +163,24 @@ def eval_str_sequence(pattern_string: str):
 
     pattern_string = pattern_string.replace("))(", ")),(")
 
+    regex = r"(\([0-9\*]*?,[0-9\*]*?\))"
+
+    matches = re.findall(regex, pattern_string)
+
+    for group in matches:
+        gr = group.replace("(", "(\"").replace(")", "\")").replace(",", "\",\"")
+        pattern_string = pattern_string.replace(group, gr)
+
     return eval(pattern_string)
 
 
-def parse_str_sequence(pattern_string: str) -> sequence:
+def parse_str_history_pattern(pattern_string: str) -> history_pattern:
 
-    eval_str_seq = eval_str_sequence(pattern_string)
+    eval_str_seq = eval_str_history_pattern(pattern_string)
 
     print(eval_str_seq)
 
-    def parse_str_sequence_aux(eval_seq: Tuple) -> sequence:
+    def parse_str_history_pattern_aux(eval_seq: Tuple) -> history_pattern:
         values = eval_seq[0]
         is_all_labels = True
         for v in values:
@@ -180,14 +188,20 @@ def parse_str_sequence(pattern_string: str) -> sequence:
                 is_all_labels = False
                 break
         if is_all_labels:
-            return sequence(values, cardinality(eval_seq[1][0], eval_seq[1][1]))
+            return history_pattern(values, cardinality(eval_seq[1][0], eval_seq[1][1]))
         else:
             seq = []
             for v in values:
-                seq += [parse_str_sequence_aux(v)]
-            return sequence(seq, cardinality(eval_seq[1][0], eval_seq[1][1]))
+                seq += [parse_str_history_pattern_aux(v)]
+            return history_pattern(seq, cardinality(eval_seq[1][0], eval_seq[1][1]))
 
-    return parse_str_sequence_aux(eval_str_seq)
+    return parse_str_history_pattern_aux(eval_str_seq)
 
 
-# print(parse_str_sequence(str_seq))
+# str_seq = "[[o0,a1,o2](1,2),[o2,a2,o3](1,*),[o3,a4,o4](1,1)](1,2)"
+
+
+print(eval_str_history_pattern('[#any_seq[o01,a01](0,*)#any_seq](1,*)'))
+
+
+# print(eval_str_history_pattern(str_seq))

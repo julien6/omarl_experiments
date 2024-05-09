@@ -13,7 +13,7 @@ from pprint import pprint
 import numpy as np
 from organizational_model import cardinality, os_encoder
 from PIL import Image
-from pattern_utils import parse_str_sequence, sequence
+from pattern_utils import eval_str_history_pattern, parse_str_history_pattern, history_pattern
 from utils import draw_networkx_edge_labels
 
 INFINITY = 'INFINITY'
@@ -44,9 +44,12 @@ class history(List[Union[observation_label, action_label]]):
     pass
 
 
-class pattern_histories:
-    def __init__(self, string_pattern: str) -> None:
-        self.pattern = parse_str_sequence(string_pattern)
+class joint_history(Dict[str, List[Union[observation_label, action_label]]]):
+    pass
+
+
+class pattern_histories(object):
+    pass
 
 
 class occurence_data:
@@ -54,31 +57,9 @@ class occurence_data:
     how to play it according to patterns.
     """
 
-    def __init__(self, ordinal_crossing: List[int] = [], global_cardinality: cardinality = cardinality(1, 1),
-                 cardinalities: Dict[int, cardinality] = {}, global_priority: int = 0,
-                 priorities: Dict[int, int] = {}):
+    def __init__(self, ord_num_to_card: Dict[int, cardinality] = {}):
         # used for exhaustive description (e.g from given histories)
-        self.ordinal_crossing: List[int] = ordinal_crossing
-
-        # used for short way description (e.g from patterns)
-        # indicates the expected cardinality for all cycles
-        self.global_cardinality = global_cardinality
-        # indicates the expected cardinality for given cycles
-        self.cardinalities = cardinalities
-        # indicates the expected priority for all cycles
-        self.global_priority = global_priority
-        self.priorities = priorities  # indicates the expected priority for given cycles
-
-    def compute_pattern_from_data(self) -> None:
-        self.global_cardinality = cardinality(
-            len(self.ordinal_crossing), len(self.ordinal_crossing))
-        self.cardinalities = {
-            cycle_num: cardinality(1, 1) for cycle_num, crossing_num
-            in enumerate(self.ordinal_crossing)
-        }
-        self.priorities = {cycle_num: crossing_num for cycle_num, crossing_num
-                           in enumerate(self.ordinal_crossing)
-                           }
+        self.ord_num_to_card = ord_num_to_card
 
     def __repr__(self) -> str:
         return json.dumps(self.__dict__, indent=0, cls=os_encoder)
@@ -103,11 +84,8 @@ class histories:
     # each action: Any is associated with a shortcut: str
     act_label_to_obj: Dict[action_label, Any]
 
-    observation_to_actions: Dict[observation_label,
-                                 Dict[action_label, indexed_occurences]]
-
-    action_to_observations: Dict[action_label,
-                                 Dict[observation_label, indexed_occurences]]
+    label_to_label: Dict[Union[observation_label, action_label],
+                         Dict[Union[observation_label, action_label], indexed_occurences]]
 
     root_observations: Dict[int, observation_label]
 
@@ -117,8 +95,7 @@ class histories:
         self.histories = {}
         self.obs_label_to_obj = {}  # each observation: Any is associated with a shortcut: str
         self.act_label_to_obj = {}  # each action: Any is associated with a shortcut: str
-        self.observation_to_actions = {}
-        self.action_to_observations = {}
+        self.label_to_label = {}
         self.root_observations = {}
         self.history_number = 0
 
@@ -126,134 +103,154 @@ class histories:
         for history in histories:
             self.add_history(history)
 
-    def add_history(self, sequence: List[Union[observation_label, action_label]]):
+    def add_history(self, history: List[Union[observation_label, action_label]]):
 
         i = 0
-        while (i < len(sequence) - 1):
+        while (i < len(history) - 1):
 
             # processing the action -> observations
 
-            obs_label = (sequence[i] if sequence[i] is not None else f"#obs_{i}") if i < len(
-                sequence) else f"#obs_{i}"
+            obs_label = (history[i] if history[i] is not None else f"#obs_{i}") if i < len(
+                history) else f"#obs_{i}"
             i += 1
 
-            act_label = (sequence[i] if sequence[i] is not None else f"#act_{i}") if i < len(
-                sequence) else f"#act_{i}"
+            if (i == len(history)):
+                break
 
-            if obs_label not in self.observation_to_actions.keys():
-                self.observation_to_actions[obs_label] = {}
+            act_label = (history[i] if history[i] is not None else f"#act_{i}") if i < len(
+                history) else f"#act_{i}"
 
-            if act_label not in self.observation_to_actions[obs_label].keys():
-                self.observation_to_actions[obs_label][act_label] = {}
+            if obs_label not in self.label_to_label.keys():
+                self.label_to_label[obs_label] = {}
 
-            if self.history_number not in self.observation_to_actions[obs_label][act_label].keys():
-                self.observation_to_actions[obs_label][act_label][self.history_number] = occurence_data(
-                    ordinal_crossing=[])
+            if act_label not in self.label_to_label[obs_label].keys():
+                self.label_to_label[obs_label][act_label] = {}
 
-            self.observation_to_actions[obs_label][act_label][self.history_number].ordinal_crossing += [i]
-            self.observation_to_actions[obs_label][act_label][self.history_number].compute_pattern_from_data(
-            )
+            if self.history_number not in self.label_to_label[obs_label][act_label].keys():
+                self.label_to_label[obs_label][act_label][self.history_number] = occurence_data(
+                    ord_num_to_card={})
 
-            # processing the action -> observations
+            self.label_to_label[obs_label][act_label][self.history_number].ord_num_to_card[i-1] = cardinality(
+                1, 1)
 
-            i += 1
-            next_obs_label = (sequence[i] if sequence[i] is not None else f"#any_obs_{i}") if i < len(
-                sequence) else f"#any_obs_{i}"
-
-            if act_label not in self.action_to_observations.keys():
-                self.action_to_observations[act_label] = {}
-
-            if next_obs_label not in self.action_to_observations[act_label].keys():
-                self.action_to_observations[act_label][next_obs_label] = {}
-
-            if self.history_number not in self.action_to_observations[act_label][next_obs_label].keys():
-                self.action_to_observations[act_label][next_obs_label][self.history_number] = occurence_data(
-                    ordinal_crossing=[])
-
-            self.action_to_observations[act_label][next_obs_label][self.history_number].ordinal_crossing += [i]
-            self.action_to_observations[act_label][next_obs_label][self.history_number].compute_pattern_from_data()
-
-        self.root_observations[self.history_number] = sequence[0]
+        if self.history_number not in self.root_observations:
+            self.root_observations[self.history_number] = []
+        self.root_observations[self.history_number] += [history[0]]
         self.history_number += 1
 
-    def add_pattern(self, pattern: Union[str, pattern_histories]):
+    def add_pattern(self, pattern: str):
 
         if type(pattern) == str:
-            pattern = pattern_histories(pattern)
+            pattern = eval_str_history_pattern(pattern)
 
-        seq = pattern.pattern
+        def all_label(labels: Any):
+            for label in labels:
+                if type(label) == list:
+                    for l in label:
+                        if type(l) != str:
+                            return False
+                elif type(label) != str:
+                    return False
+            return True
 
+        self.ordinal_num = 0
         self.first_obs = None
+        self.is_last = False
+        self.last_label = None
+        self.seq_start_label = None
+        self.seq_end_label = None
+        self.changed = False
 
-        def add_pattern_aux(sequence_pattern: sequence, sequence_index: int, cardinalities: List[cardinality]):
-            data = sequence_pattern.data
-            if type(data[0]) == sequence:
-                cardinalities = [sequence_pattern.cardinality] + cardinalities
-                for seq_index, seq in enumerate(data):
-                    add_pattern_aux(seq, seq_index, cardinalities)
+        def add_pattern_aux(pattern: Any, cardinalities: List):
 
-            elif type(data[0]) == str:
+            data = pattern[0]
+            card = pattern[1]
+
+            if not all_label(data):
+                seq_start = None
+                seq_end = None
+                for seq_hist in data:
+                    start, seq_end = add_pattern_aux(
+                        seq_hist, [card]+cardinalities)
+                    if seq_start is None:
+                        seq_start = start
+
+                if self.label_to_label.get(seq_end, None) == None:
+                    self.label_to_label[seq_end] = {}
+                if self.label_to_label[seq_end].get(seq_start, None) == None:
+                    self.label_to_label[seq_end][seq_start] = {}
+                if self.label_to_label[seq_end][seq_start].get(self.history_number, None) == None:
+                    self.label_to_label[seq_end][seq_start][self.history_number] = occurence_data(
+                        ord_num_to_card={})
+                card_seq = [(0 if (int(c) - 1) < 0 else (int(c) - 1)) if c.isnumeric()
+                            else "*" for c in pattern[1]]
+                self.label_to_label[seq_end][seq_start][self.history_number]\
+                    .ord_num_to_card[self.ordinal_num] = cardinality(card_seq[0], card_seq[1])
+                self.ordinal_num += 1
+
+            else:
+                self.is_last = False
+                self.changed = False
                 i = 0
-                while (i < len(data)):
+                while i < len(data):
 
-                    # processing obs -> act
+                    if i == 0:
+                        self.seq_start_label = data[0]
+                        self.seq_end_label = data[-1]
 
-                    obs_label = data[i]
+                    if i == 0 and self.last_label is not None:
+                        data = [self.last_label] + data
+                        self.changed = True
 
-                    if (self.first_obs is None):
-                        self.first_obs = obs_label
+                    last_label = data[i]
+                    if self.ordinal_num == 0:
+                        self.first_obs = copy.copy(last_label)
 
+                    if (i == len(data) - 1):
+                        card = [(0 if (int(c) - 1) < 0 else (int(c) - 1)) if c.isnumeric()
+                                else "*" for c in pattern[1]]
+                        first_label = data[1] if self.changed else data[0]
+                        if (len(data) > 1) and ((card[0] > 0 and card[1] > 0) or (card[1] == "*")):
+                            data += [first_label]
+                        self.is_last = True
+                        self.last_label = last_label
+                    else:
+                        card = ("1", "1")
                     i += 1
 
-                    if (i == len(data)):
+                    if i == len(data):
                         break
 
-                    act_label = data[i]
+                    next_label = data[i]
+                    if self.label_to_label.get(last_label, None) == None:
+                        self.label_to_label[last_label] = {}
+                    if self.label_to_label[last_label].get(next_label, None) == None:
+                        self.label_to_label[last_label][next_label] = {}
+                    if self.label_to_label[last_label][next_label].get(self.history_number, None) == None:
+                        self.label_to_label[last_label][next_label][self.history_number] = occurence_data(
+                            ord_num_to_card={})
+                    self.label_to_label[last_label][next_label][self.history_number]\
+                        .ord_num_to_card[self.ordinal_num] = cardinality(card[0], card[1])
+                    self.ordinal_num += 1
+                    if self.is_last:
+                        break
+                return self.seq_start_label, self.seq_end_label
 
-                    if obs_label not in self.observation_to_actions.keys():
-                        self.observation_to_actions[obs_label] = {}
+        add_pattern_aux(pattern, [])
 
-                    if act_label not in self.observation_to_actions[obs_label].keys():
-                        self.observation_to_actions[obs_label][act_label] = {}
-
-                    if self.history_number not in self.observation_to_actions[obs_label][act_label].keys():
-                        self.observation_to_actions[obs_label][act_label][self.history_number] = occurence_data(
-                            cardinalities=[])
-
-                    if self.observation_to_actions[obs_label][act_label][self.history_number] is not None:
-                        card = [sequence_pattern.cardinality] + cardinalities
-                        card = {i: c for i, c in enumerate(card)}
-
-                    # processing act -> next obs
-
-                    i += 1
-                    next_obs_label = data[i]
-
-                    if act_label not in self.action_to_observations.keys():
-                        self.action_to_observations[act_label] = {}
-
-                    if next_obs_label not in self.action_to_observations[act_label].keys():
-                        self.action_to_observations[act_label][next_obs_label] = {
-                            self.history_number: occurence_data(
-                                cardinalities=card)
-                        }
-
-                    if self.history_number not in self.action_to_observations[act_label][next_obs_label].keys():
-                        self.action_to_observations[act_label][next_obs_label][self.history_number] = occurence_data(
-                            cardinalities=card)
+        if self.history_number not in self.root_observations:
+            self.root_observations[self.history_number] = []
+        self.root_observations[self.history_number] += [self.first_obs]
 
         self.history_number += 1
-        # self.compute_father_to_son_relations()
-        # self.compute_root_observations()
-        self.root_observations += [self.first_obs]
 
     def next_actions(self, observation: observation_label) -> Dict[action_label, indexed_occurences]:
-        return self.observation_to_actions.get(observation, None)
+        return self.label_to_label.get(observation, None)
 
     def next_observations(self, action: action_label) -> Dict[observation_label, indexed_occurences]:
-        return self.action_to_observations.get(action, None)
+        return self.label_to_label.get(action, None)
 
-    def generate_graph_plot(self, show: bool = False, render_rgba: bool = False, save: bool = False, transition_data: List[str] = ['global_cardinality']):
+    def generate_graph_plot(self, show: bool = False, render_rgba: bool = False, save: bool = False, transition_data: List[str] = ['ord_num_to_card']):
 
         # Create a directed graph object
         G = nx.DiGraph()
@@ -272,25 +269,21 @@ class histories:
             return res[:-2] + '}'
 
         def walk_graph(root_obs_label: observation_label):
-            act_occ = self.observation_to_actions.get(root_obs_label, None)
-            if act_occ is None:
+            node_occ = self.label_to_label.get(root_obs_label, None)
+            if node_occ is None:
                 return
-            for act_label, act_occurences in act_occ.items():
-                G.add_edge(root_obs_label, act_label)
-                if (root_obs_label, act_label) in oriented_edges.keys():
+            for node_label, occurences in node_occ.items():
+                G.add_edge(root_obs_label, node_label)
+                if (root_obs_label, node_label) in oriented_edges.keys():
                     return
-                oriented_edges[(root_obs_label, act_label)
-                               ] = str(str_occ_info(act_occurences, transition_data))
-                obs_occ = self.action_to_observations.get(act_label)
-                for obs_label, obs_occurences in obs_occ.items():
-                    G.add_edge(act_label, obs_label)
-                    oriented_edges[(act_label, obs_label)
-                                   ] = str(str_occ_info(obs_occurences, transition_data))
-                    walk_graph(obs_label)
+                oriented_edges[(root_obs_label, node_label)
+                               ] = str(str_occ_info(occurences, transition_data))
+                walk_graph(node_label)
 
         # Add directed edges (source set)
-        for hist_num, root_obs_label in self.root_observations.items():
-            walk_graph(root_obs_label)
+        for hist_num, root_obs_labels in self.root_observations.items():
+            for root_obs_label in root_obs_labels:
+                walk_graph(root_obs_label)
 
         # Draw the graph
         pos = nx.spring_layout(G)
@@ -337,79 +330,73 @@ class histories:
 
     def walk_with_history(self, history: history):
 
-        def get_observations(act: Union[action_label, None]):
-            if act is None:
-                return self.root_observations
-            return list(self.action_to_observations[act])
+        associated_histories = []
+        node_label = history[0]
 
-        def get_actions(obs: Union[observation_label, None]):
-            return list(self.observation_to_actions[obs])
+        if node_label not in list(itertools.chain.from_iterable(list(self.root_observations.values()))):
+            return associated_histories
+        else:
+            for i in range(0, len(history) - 1):
+                node_label = history[i]
+                next_node_label = history[i+1]
 
-        last_obs = None
-        last_act = None
-        i = 0
-        while (i < len(history)):
+                ass_hist = []
 
-            curr_obs = history[i]
-            if not curr_obs in get_observations(last_act):
-                return False
-            i += 1
-            last_obs = curr_obs
+                if self.label_to_label.get(node_label, None) is None or self.label_to_label[node_label].get(next_node_label, None) is None:
+                    break
+                for hist_num, occ in self.label_to_label[node_label][next_node_label].items():
+                    if (i) in list(occ.ord_num_to_card.keys()):
+                        ass_hist += [hist_num]
 
-            if (i == len(history)):
-                break
+                associated_histories += [ass_hist]
 
-            curr_act = history[i]
+        return associated_histories
 
-            if not curr_act in get_actions(last_obs):
-                return False
-            i += 1
-            last_act = curr_act
-        return True
 
+class joint_histories:
+    
+    ag_histories: Dict[str, histories]
+
+    def __init__(self, agents: List[str]):
+        self.ag_histories = {agent: histories() for agent in agents}
+    
+    def add_joint_history(self, jt_hist: joint_history):
+        for agent in self.ag_histories:
+            self.ag_histories[agent].add_history(jt_hist[agent])
+
+    def add_joint_pattern_history(self, jt_patt_hist: Dict[str, pattern_histories]):
+        for agent in self.ag_histories:
+            self.ag_histories[agent].add_pattern(jt_patt_hist)
+
+    def add_history(self, jt_hist: joint_history):
+        for agent in self.ag_histories:
+            self.ag_histories[agent].add_history(jt_hist[agent])
 
 if __name__ == '__main__':
 
-    # histories_factory._instance.new_histories().where_all_match()
-
     hg = histories()
-
-    # adding sequences to mimic a "(Any_obs, Any_act, Any_obs){0,10}"
-    # hg.add_history(["o21", "a21", "o31", "a31", "o21"], {1: (0, 10)})
-    # hg.add_history(["o21", "a22", "o2"], {1: (0, 10)})
-
-    # # adding a sequence
-    # hg.add_history(["o1", "a1", "o2", "a3", "o1",
-    #                 "a1", "o2", "a3", "o1", "a4", "o4"])
-
-    # hg.add_history(["o1", "a1", "o2", "a3", "o1", "a4", "o4"])
 
     # hg.add_history(["o0", "a0", "o1", "a1", "o1",
-    #                 "a1", "o1", "a1", "o2", "a2"])
+    #                "a1", "o1", "a1", "o2", "a0", "o1", "a1", "o1",
+    #                "a1", "o1", "a1", "o2", "a2", "o3"])
 
-    hg = histories()
-    hg.add_history(["o0", "a0", "o1", "a1", "o1", "a1", "o1", "a1", "o2", "a2"])
+    # hg.add_history(["o0", "a0", "o1"])
 
-    # hg.add_pattern('[[o0,a0,o1,a0,a1](1,1),[o1,a1,o2,a2,o1](1,1),[o0,a0,o1,a0,a1](1,1)](1,2)')
+    # hg.add_history(["o0", "a0", "o1", "a1", "o2", "a3", "o3"])
 
-    # hg.add_pattern('[o0,a0,o1](1,1)')
+    # hg.add_history(["0", "1", "0", "1", "2", "3", "2"])
+    # hg.add_history(["0", "1", "0", "1", "0", "1", "0"])
+    # hg.add_history(["0", "1", "0"])
 
-    # hg.add_pattern('[o0,a0,o1,a1,o0,a0,o1](1,1)')
+    # print(hg.walk_with_history(["0", "1", "0", "1", "2"]))
 
-    # str_pattern = "[o3|o4](1,1)"  
+    # hg.add_pattern("[[o0,a0,o2](1,1)[#any_obs,#any_act](1,*)[o5,a6,o7](1,1)](4,4)")
 
-    # ph = pattern_histories(str_pattern)
+    # hg.add_pattern("[[o0,a0,o1](1,1)[a2,o2](1,1)](7,7)]")
 
-    # print(ph.pattern)
+    hg.add_pattern("[0,1](1,1)")
+    hg.add_pattern("[0,1](3,3)")
+    print(hg.walk_with_history(["0", "1", "0", "1", "0", "1"]))
 
-    graph_plot = hg.generate_graph_plot(
-        show=True, transition_data=["global_cardinality","priority","cardinalities", "priorities"])
-
-    # hg.add_history(["o0", "a0", "o1", "a1", "o1", "a1", "o1", "a1",
-    #                 "o2", "a0", "o1", "a1", "o1", "a1", "o1", "a1", "o2", "a2"])
-
-    # # hg.add_history(["o61", "a61", "o31"], {1: (1, 1)})
-    # # hg.add_history(["o71", "a71", "o31"], {1: (1, 1)})
-
-    # hg.generate_graph_plot(show=True)
-    # print(hg.walk_with_history(["o21", "a22", "o2", "a23", "o3"]))
+    graph_plot = hg.generate_graph_plot(show=True, transition_data=[
+                                        "ord_num_to_card"])

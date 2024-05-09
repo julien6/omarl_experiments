@@ -1,4 +1,7 @@
+import copy
 import functools
+import json
+from typing import Dict, Union
 import gymnasium
 import numpy as np
 import random
@@ -397,6 +400,13 @@ class raw_env(AECEnv, EzPickle):
             self.render()
 
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+
 if __name__ == '__main__':
 
     env = raw_env(size=10, seed=42, render_mode="rgb_array")
@@ -407,12 +417,84 @@ if __name__ == '__main__':
 
     env = aec_to_parallel(env)
 
-    env.reset(seed=42)
+    label_to_obj: Dict = {
+        "a0": 0,
+        "a1": 1,
+        "a2": 2,
+        "a3": 3,
+        "a4": 4,
+        "a5": 5,
+        "a6": 6,
 
-    perfect_policy = [5, 0, 0, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 6, 0, 0, 0, 5, 0, 0, 4, 0, 0, 4,
-                      0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 6, 0, 0, 0, 5, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 6]
+        "o01": np.array([0, 1, 0, 0, 2, 0, 0, 1, 0]),  # 0 -> 1
+        "o02": np.array([0, 5, 0, 0, 2, 0, 0, 1, 0]),  # 1 -> 5
+        "o03": np.array([0, 4, 0, 0, 3, 0, 0, 1, 0]),  # 2 -> 2
+        "o04": np.array([0, 1, 0, 0, 3, 0, 0, 1, 0]),  # 2 -> 2
+        "o05": np.array([0, 1, 0, 0, 3, 0, 0, 4, 1]),  # 3 -> 6
+        "o06": np.array([0, 1, 0, 0, 3, 0, 0, 4, 2]),  # 3 -> 6
+        "o07": np.array([0, 1, 0, 0, 2, 0, 0, 5, 1]),  # -> 0
+        "o08": np.array([0, 1, 0, 0, 2, 0, 0, 5, 2]),  # -> 0
+        "o09": np.array([0, 1, 0, 0, 2, 0, 0, 4, 3]),  # -> 0
+        "o010": np.array([0, 1, 0, 0, 2, 0, 0, 4, 1]),  # -> 0
+
+        "o11": np.array([1, 0, 0, 5, 2, 1, 0, 0, 0]),  # 1 -> 5
+        "o12": np.array([2, 0, 0, 5, 2, 1, 0, 0, 0]),  # 1 -> 5
+        "o13": np.array([1, 0, 0, 4, 3, 1, 0, 0, 0]),  # 2 -> 4
+        "o14": np.array([2, 0, 0, 4, 3, 1, 0, 0, 0]),  # 2 -> 4
+        "o15": np.array([0, 0, 0, 1, 3, 1, 0, 0, 0]),  # 2 -> 4
+        "o16": np.array([0, 0, 0, 1, 2, 1, 0, 0, 0]),  # 0 -> 3
+        "o17": np.array([0, 0, 1, 1, 3, 4, 0, 0, 0]),  # 3 -> 6
+        "o18": np.array([0, 0, 2, 1, 3, 4, 0, 0, 0]),  # 3 -> 6
+        "o19": np.array([0, 0, 1, 1, 2, 5, 0, 0, 0]),  # -> 0
+        "o110": np.array([0, 0, 2, 1, 2, 5, 0, 0, 0]),  # -> 0
+        "o111": np.array([1, 0, 0, 4, 2, 1, 0, 0, 0]),  # -> 0
+        "o112": np.array([3, 0, 0, 4, 2, 1, 0, 0, 0]),  # -> 0
+        "o113": np.array([0, 0, 1, 1, 2, 4, 0, 0, 0]),  # -> 0
+        "o114": np.array([0, 0, 3, 1, 2, 4, 0, 0, 0]),  # -> 0
+
+        "o21": np.array([0, 1, 0, 0, 2, 0, 1, 5, 0]),  # 2 -> 5
+        "o22": np.array([0, 1, 0, 0, 2, 0, 2, 5, 0]),  # 2 -> 5
+        "o23": np.array([0, 1, 0, 0, 3, 0, 1, 4, 0]),  # 3 -> 1
+        "o25": np.array([0, 4, 0, 0, 2, 0, 0, 1, 0]),  # 1 -> 2
+        "o26": np.array([0, 1, 0, 0, 2, 0, 1, 4, 0]),  # -> 0
+        "o27": np.array([0, 1, 0, 0, 2, 0, 3, 4, 0])  # -> 0
+    }
+
+    obj_to_label = {str(v): k for k, v in label_to_obj.items()}
+
+    init_obs = env.reset(seed=42)[0]
+
+    print(init_obs)
+
+    joint_history = {agent: [] for agent in env.aec_env.agents}
+
+    for agent in joint_history:
+        ag_obs = init_obs[agent]
+        lab = obj_to_label.get(str(ag_obs), None)
+        if lab is not None:
+            joint_history[agent] += [lab]
+
+    print(joint_history)
+
+    _perfect_policy = [5, 0, 0, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 6, 0, 0, 0, 5, 0, 0, 4, 0, 0, 4,
+                       0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 6, 0, 0, 0, 5, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 6]
+
+    agent_0_policy = [5, 2, 2, 2, 2, 2, 6, 0,
+                      0, 0, 0, 0, 1, 2, 0, 1, 2, 0, 0, 1, 2]
+    agent_1_policy = [0, 0, 0, 0, 0, 0, 0, 5,
+                      4, 4, 4, 4, 4, 6, 0, 0, 3, 4, 0, 0, 0]
+    agent_2_policy = [0, 2, 2, 2, 2, 2, 0, 0,
+                      0, 1, 2, 0, 0, 0, 5, 1, 1, 1, 1, 1, 6]
+
+    perfect_policy = {
+        "agent_0": agent_0_policy,
+        "agent_1": agent_1_policy,
+        "agent_2": agent_2_policy
+    }
 
     frame_list = [Image.fromarray(env.render())]
+
+    transition_data = []
 
     cumulative_reward = 0
     i = 0
@@ -420,11 +502,25 @@ if __name__ == '__main__':
         # actions = {agent: env.action_space(agent).sample() for agent in env.agents}
         print("Step: ", i)
 
-        actions = {agent: perfect_policy.pop(0) if len(
-            perfect_policy) > 0 else 0 for agent in env.agents}
+        actions = {agent: perfect_policy[agent].pop(0) if len(
+            perfect_policy[agent]) > 0 else 0 for agent in env.agents}
+
+        for agent in joint_history:
+            ag_obs = actions[agent]
+            lab = obj_to_label.get(str(ag_obs), None)
+            if lab is not None:
+                joint_history[agent] += [lab]
+
+        transition_data += [copy.deepcopy(env.aec_env.grid)]
 
         observations, rewards, terminations, truncations, infos = env.step(
             actions)
+
+        for agent in joint_history:
+            ag_obs = observations[agent]
+            lab = obj_to_label.get(str(ag_obs), None)
+            if lab is not None:
+                joint_history[agent] += [lab]
 
         cumulative_reward += rewards["agent_0"]
 
@@ -432,6 +528,10 @@ if __name__ == '__main__':
         frame_list.append(img)
 
         i += 1
+
+    print(joint_history)
+
+    # print(json.dumps(transition_data, cls=NumpyEncoder))
 
     print("Cumulative Reward: ", cumulative_reward)
 
