@@ -296,54 +296,51 @@ if __name__ == "__main__":
 
     # --------------------------------------------
     # Define all the roles
-    roles = ["role1", "role2", "role3"]
+    roles = ["role_1", "role_2", "role_3"]
     # --------------------------------------------
 
     # --------------------------------------------
     # Define the roles inheritance relations
-    role_inheritance_relations = {"role2": ["role1"], "role3": ["role1"]}
+    role_inheritance_relations = {"role_2": ["role_1"], "role_3": ["role_1"]}
     # --------------------------------------------
 
     # --------------------------------------------
     # Define the groups
 
     #  - Group 1
-    intra_links = [link("role1", "role2", link_type.AUT),
-                   link("role2", "role3", link_type.ACQ)]
-    inter_links = [link("role1", "role3", link_type.ACQ)]
-    intra_compatibilities = [compatibility("role1", "role3")]
-    inter_compatibilities = [compatibility("role2", "role3")]
+    intra_links = [link("role_1", "role_2", link_type.ACQ),
+                   link("role_2", "role_3", link_type.ACQ)]
+    inter_links = [link("role_1", "role_3", link_type.ACQ)]
+    intra_compatibilities = []
+    inter_compatibilities = []
     role_cardinalities = {
-        'role1': cardinality(1, 4),
-        'role2': cardinality(0, INFINITY),
+        'role_0': cardinality(1, 1),
+        'role_1': cardinality(1, 1),
+        'role_2': cardinality(1, 1),
     }
-    sub_group_cardinalities = {
-        'group1': cardinality(1, INFINITY),
-        'group2': cardinality(0, INFINITY),
-    }
-    group2 = group_specifications(["role1", "role2", "role3"], {}, intra_links, inter_links,
+    sub_group_cardinalities = {}
+    group2 = group_specifications(["role_1", "role_2", "role_3"], {}, intra_links, inter_links,
                                   intra_compatibilities, inter_compatibilities, role_cardinalities, sub_group_cardinalities)
 
     #  - Group 2
-    intra_links = [link("role1", "role2", link_type.AUT),
-                   link("role2", "role3", link_type.ACQ)]
-    inter_links = [link("role1", "role3", link_type.ACQ)]
-    intra_compatibilities = [compatibility("role1", "role3")]
-    inter_compatibilities = [compatibility("role2", "role3")]
+    intra_links = [link("role_1", "role_2", link_type.ACQ),
+                   link("role_2", "role_3", link_type.ACQ)]
+    inter_links = []
+    intra_compatibilities = []
+    inter_compatibilities = []
     role_cardinalities = {
-        'role1': cardinality(1, 4),
-        'role2': cardinality(0, INFINITY),
+        'role_0': cardinality(1, 1),
+        'role_1': cardinality(1, 1),
+        'role_2': cardinality(1, 1)
     }
     sub_group_cardinalities = {
-        'group1': cardinality(1, INFINITY),
-        'group2': cardinality(0, INFINITY),
     }
-    group1 = group_specifications(roles, {"group2": group2}, intra_links, inter_links,
+    group1 = group_specifications(roles, {}, intra_links, inter_links,
                                   intra_compatibilities, inter_compatibilities, role_cardinalities, sub_group_cardinalities)
     # --------------------------------------------
 
     structural_specs = structural_specifications(
-        roles=['role1', 'role2'],
+        roles=['role_1', 'role_2'],
         role_inheritance_relations=role_inheritance_relations,
         root_groups={"group1": group1}
     )
@@ -415,12 +412,12 @@ if __name__ == "__main__":
     # Define the permissions
     permissions = [
         permission(
-            role='role1',
+            role='role_1',
             mission='mission1',
             time_constraint=time_constraint_type.ANY
         ),
         permission(
-            role='role3',
+            role='role_3',
             mission='mission1',
             time_constraint=time_constraint_type.ANY
         )
@@ -430,7 +427,7 @@ if __name__ == "__main__":
     # Define the obligations
     obligations = [
         obligation(
-            role='role2',
+            role='role_2',
             mission='mission2',
             time_constraint=time_constraint_type.ANY
         )

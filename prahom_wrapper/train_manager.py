@@ -18,6 +18,8 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 from PIL import Image
 from custom_envs.movingcompany import moving_company_v0
 
+from prahom_wrapper.policy_model import joint_policy_constraint
+
 # from prahom_wrapper.prahom_wrapper import probabilistic_decision_graph
 
 
@@ -35,11 +37,15 @@ from custom_envs.movingcompany import moving_company_v0
 
 class train_test_manager:
 
-    def __init__(self, train_env: Any, eval_env: Any, num_cpu: int = 4, policy_constraints: Dict[str, None] = None, mode=0) -> None:
+    def __init__(self, train_env: Any, eval_env: Any, label_to_obj: Dict[str, Any], num_cpu: int = 4, policy_constraints: joint_policy_constraint = None, mode=0) -> None:
 
         self.eval_env = eval_env
         self.env = train_env
         self.num_cpu = num_cpu
+
+        self.label_to_obj: Dict[str, Any] = label_to_obj
+        self.obj_to_label: Dict[Any, str] = {
+            str(v): k for k, v in self.label_to_obj.items()}
 
         self.policy_constraints = policy_constraints
 
@@ -67,7 +73,7 @@ class train_test_manager:
         self.constrained_policy.predict = self.constrained_predict(
             copy.deepcopy(self.constrained_policy.predict), policy_constraints=policy_constraints)
 
-    def constrained_predict(self, initial_predict: Callable, policy_constraints: Dict[str, None] = None):
+    def constrained_predict(self, initial_predict: Callable, policy_constraints: joint_policy_constraint = None):
         """
         Create a constrained policy
         TODO: Generate a class inheriting from the Policy parent class -> a wrapper class
@@ -96,25 +102,20 @@ class train_test_manager:
                     env_obs = observation[(
                         num_env * num_agent):((num_env + 1)*num_agent)]
 
+                    joint_observations = {agent: self.obj_to_label.get(str(
+                        env_obs[agent_index]), str(env_obs[agent_index])) for agent_index, agent in enumerate(self.agents)}
+
+                    next_joint_actions = policy_constraints\
+                        .next_actions(joint_observations)
+
+                    next_joint_actions = {agent: action_labels if len(action_labels) > 0 else [
+                        self.obj_to_label["0"]] for agent, action_labels in next_joint_actions.items()}
+
+                    next_joint_actions = {agent: random.choice([self.label_to_obj[action_label]
+                                                                for action_label in action_labels]) for agent, action_labels in next_joint_actions.items()}
                     for agent_index, agent in enumerate(self.agents):
-
-                        if agent in policy_constraints.keys():
-
-                            agent_obs = str(env_obs[agent_index])
-
-                            # print(agent_obs)
-                            # print("="*30)
-
-                            dt = policy_constraints[agent]
-                            act_prob = dt.next_actions(agent_obs)
-                            if act_prob is not None:
-                                expected_action = random.choice(
-                                    list(act_prob.keys()))
-                                for act in act_prob.keys():
-                                    if random.random() <= act_prob[act]:
-                                        expected_action = act
-                                actions[num_env * num_agent +
-                                        agent_index] = expected_action
+                        actions[num_env * num_agent +
+                                agent_index] = next_joint_actions[agent]
 
             # print(actions)
             return actions, state
@@ -173,7 +174,8 @@ class train_test_manager:
             """
             for agent_index, history in enumerate(joint_history):
                 agent_history = copy.copy(history)
-                agent_history += [(joint_observation[agent_index],joint_action[agent_index])]
+                agent_history += [(joint_observation[agent_index],
+                                   joint_action[agent_index])]
                 joint_history[agent_index] = agent_history
             return joint_history
 
@@ -226,7 +228,7 @@ class train_test_manager:
 
         self.eval_env.close()
 
-        # print("Average reward: ", total_reward / num_it)
+        print("Average reward: ", total_reward / num_it)
         print("Finished")
 
         return joint_histories

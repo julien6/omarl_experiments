@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 from pprint import pprint
 
 import numpy as np
-from organizational_model import cardinality, os_encoder
+from prahom_wrapper.organizational_model import cardinality, os_encoder
 from PIL import Image
-from pattern_utils import eval_str_history_pattern, parse_str_history_pattern, history_pattern
-from utils import draw_networkx_edge_labels
+from prahom_wrapper.pattern_utils import eval_str_history_pattern, parse_str_history_pattern, history_pattern
+from prahom_wrapper.utils import draw_networkx_edge_labels
 
 INFINITY = 'INFINITY'
 WILDCARD_NUMBER = 10000
@@ -245,10 +245,10 @@ class histories:
         self.history_number += 1
 
     def next_actions(self, observation: observation_label) -> Dict[action_label, indexed_occurences]:
-        return self.label_to_label.get(observation, None)
+        return self.label_to_label.get(observation, {})
 
     def next_observations(self, action: action_label) -> Dict[observation_label, indexed_occurences]:
-        return self.label_to_label.get(action, None)
+        return self.label_to_label.get(action, {})
 
     def generate_graph_plot(self, show: bool = False, render_rgba: bool = False, save: bool = False, transition_data: List[str] = ['ord_num_to_card']):
 
@@ -363,20 +363,28 @@ class joint_histories:
     def add_joint_history(self, jt_hist: joint_history):
         for agent in self.ag_histories:
             self.ag_histories[agent].add_history(jt_hist[agent])
+        return self
 
     def add_joint_histories(self, jt_hist: Dict[str, histories]):
         self.ag_histories = jt_hist
+        return self
 
     def add_history(self, jt_hist: history, agent: str):
         for agent in self.ag_histories:
             self.ag_histories[agent].add_history(jt_hist[agent])
+        return self
 
     def add_joint_pattern_history(self, jt_patt_hist: Dict[str, pattern_histories]):
         for agent in self.ag_histories:
             self.ag_histories[agent].add_pattern(jt_patt_hist)
+        return self
 
     def add_pattern_history(self, pattern_hist: pattern_histories, agent: str):
         self.ag_histories[agent].add_pattern(pattern_hist)
+        return self
+
+    def get_next_joint_action(self, joint_observation: Dict[str, observation_label]) -> Dict[str, List[action_label]]:
+        return {agent: list(self.ag_histories[agent].next_actions(observation_label).keys()) for agent, observation_label in joint_observation.items()}
 
 if __name__ == '__main__':
 

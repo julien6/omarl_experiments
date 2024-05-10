@@ -1,7 +1,7 @@
 import itertools
 import random
 from typing import List, Tuple, Union
-from organizational_model import cardinality
+from prahom_wrapper.organizational_model import cardinality
 import re
 
 

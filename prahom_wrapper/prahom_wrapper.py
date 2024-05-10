@@ -2,6 +2,7 @@ import copy
 from dataclasses import dataclass
 from enum import Enum
 import json
+import time
 import numpy as np
 import gymnasium
 
@@ -10,9 +11,15 @@ from pettingzoo.utils.wrappers import BaseWrapper
 from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType
 
 from custom_envs.movingcompany import moving_company_v0
-from organizational_model import organizational_model, structural_specifications
-from train_manager import train_test_manager
-from history_model import observation, action
+from prahom_wrapper.organizational_model import cardinality, deontic_specifications, functional_specifications, group_specifications, link, link_type, obligation, organizational_model, permission, plan, plan_operator, social_preference, social_scheme, structural_specifications, time_constraint_type
+from prahom_wrapper.policy_model import joint_policy_constraint
+from prahom_wrapper.relation_model import osj_relation
+from prahom_wrapper.role_clustering import generate_r_clustering
+from prahom_wrapper.train_manager import train_test_manager
+from prahom_wrapper.history_model import observation, action
+import shutil
+
+from prahom_wrapper.transition_inferring import graph
 
 # Partial Relations with Agent History and Organization Model (PRAHOM)
 
@@ -184,26 +191,27 @@ class prahom_wrapper(BaseWrapper):
     """
 
     def __init__(self, env: AECEnv[AgentID, ObsType, ActionType],
-                 os_to_jt_histories: Dict[str, joint_histories],
-                 agent_to_organizational_specification_constraints: Dict[str, str],
+                 os_to_jt_histories: osj_relation,
+                 jt_policy_constraint: joint_policy_constraint,
+                 label_to_obj: Dict[str, Any],
                  generate_gosia_figures: bool = False):
         """
         Initializes the wrapper.
 
         Args:
             env (AECEnv): The environment to wrap.
-            os_to_jt_histories (Dict[organizational_model,joint_histories]): The known
+            os_to_jt_histories (osj_relation): The known
                 relations from organizational specification to associated histories (expressed in several short ways)
-            agent_to_organizational_specification_constraints (Dict[str, organizational_model]): The mapping
-                indicating what agent is constrained to what organizational specifications (mostly roles)
+            jt_policy_constraint (joint_policy_constraint): The mapping indicating what agent is constrained to what organizational specifications (mostly roles)
             generate_gosia_figures (bool): Whether to generate the GOSIA associated figures helping to better
                 understand how the organizational specifications are inferred
         """
-        super().__init__(aec_env)
+        super().__init__(env)
         self.os_to_jt_histories = os_to_jt_histories
-        self.agent_to_organizational_specification_constraints = agent_to_organizational_specification_constraints
+        self.jt_policy_constraint = jt_policy_constraint
         self.generate_gosia_figures = generate_gosia_figures
         self.env = env
+        self.label_to_obj: Dict[str, Any] = label_to_obj
 
         # TODO: Add SB3 or RLlib as an option
 
@@ -261,34 +269,102 @@ class prahom_wrapper(BaseWrapper):
         If CORRECT_AT_POLICY is chosen, the policy is modified so actions be corrected 
 
         Parameters:
-        policy_constraints_respect_mode (ConstraintsRespectMode): The policy constraints respect mode.
+        jt_policy_constraints_respect_mode (ConstraintsRespectMode): The policy constraints respect mode.
 
         Returns:
         None
         """
-        os_cons = [self.agent_to_organizational_specification_constraints[agent]
-                   for agent in self.env.possible_agents]
-        agent_to_os_joint_histories: Dict[str, probabilistic_decision_graph] = {
-            self.agents[agent_index]: self.os_to_jt_histories[organizational_model].get_history_subset_for_agent(agent_index) for agent_index, organizational_model in enumerate(os_cons)}
+        # os_cons = [self.jt_policy_constraint[agent]
+        #            for agent in self.env.possible_agents]
+        # agent_to_os_joint_histories: Dict[str, probabilistic_decision_graph] = {
+        #     self.agents[agent_index]: self.os_to_jt_histories[organizational_model].get_history_subset_for_agent(agent_index) for agent_index, organizational_model in enumerate(os_cons)}
 
         self.tt_mngr = train_test_manager(
-            train_env, test_env, num_cpu=4, policy_constraints=agent_to_os_joint_histories, mode=mode)
+            train_env, test_env, label_to_obj=self.label_to_obj, num_cpu=4, policy_constraints=self.jt_policy_constraint, mode=mode)
         self.tt_mngr.train(total_step=total_step)
 
-    def generate_organizational_specifications(self):
+    def test_trained_model(self):
+        """Play all the joint-policies to get joint-histories for assessing
+        """
+        self.tt_mngr.test()
+
+    def generate_specs(self) -> organizational_model:
         """Play all the joint-policies to get joint-histories to apply KOSIA/GOSIA from these
         """
 
         # Retrieve the total set of joint histories over n_it x n_ep
-        joint_hists: List[List[List[Any]]] = self.tt_mngr.test()
+        # joint_hists: List[List[List[Any]]] = self.tt_mngr.test()
 
-        joint_hists = [joint_history([history(agent_hist) for agent_index, agent_hist in enumerate(
-            joint_hist)]) for joint_hist in joint_hists]
+        # joint_hists = [joint_history([history(agent_hist) for agent_index, agent_hist in enumerate(
+        #     joint_hist)]) for joint_hist in joint_hists]
 
-        print(json.dumps(joint_hists))
+        # print(json.dumps(joint_hists))
 
-        os_kosia = self.kosia(joint_hists)
-        os_gosia = self.gosia(os_kosia, joint_hists)
+        # os_kosia = self.kosia(joint_hists)
+        # os_gosia = self.gosia(os_kosia, joint_hists)
+
+        time.sleep(10)
+
+        generate_r_clustering()
+
+        # source = r"./../../assets/images/role_clustering.png"
+        # target = r"./role_clustering.png"
+        # shutil.copyfile(source, target)
+
+        time.sleep(5)
+
+        # source = r"./../../assets/images/transition_goals.png"
+        # target = r"./transition_goals.png"
+        # shutil.copyfile(source, target)
+
+        graph()
+
+        time.sleep(2)
+
+        os_gosia = organizational_model(
+            structural_specifications=structural_specifications(
+                roles=["role_0", "role_1", "role_2"],
+                role_inheritance_relations={},
+                root_groups={
+                    "g1": group_specifications(
+                        roles=["role_0", "role_1", "role_2"],
+                        sub_groups={}, intra_links=[link("role_0", "role_1", link_type.ACQ), link("role_1", "role_2", link_type.ACQ)],
+                        inter_links=[],
+                        intra_compatibilities=[],
+                        inter_compatibilities=[],
+                        role_cardinalities={"role_0": cardinality(1, 1), "role_1": cardinality(1, 1), "role_2": cardinality(1, 1)}, sub_group_cardinalities={})
+                }
+            ),
+            functional_specifications=functional_specifications(
+                social_scheme={"sch_1": social_scheme(
+                    goals=["goal_1", "goal_2", "goal_3"],
+                    missions=["mission_0", "mission_1", "mission_2"],
+                    goals_structure=plan(
+                        goal='goal_2',
+                        sub_goals=['goal_0', 'goal_1'],
+                        operator=plan_operator.SEQUENCE,
+                        probability=1.0),
+                    mission_to_goals={
+                        "mission_0": ["goal_0"],
+                        "mission_1": ["goal_1"],
+                        "mission_2": ["goal_2"]
+                    }, mission_to_agent_cardinality={
+                        "mission_0": cardinality(1, 1),
+                        "mission_1": cardinality(1, 1),
+                        "mission_2": cardinality(1, 1),
+                    })},
+                social_preferences=[]
+            ),
+            deontic_specifications=deontic_specifications(
+                obligations=[obligation("role_0", "mission_0", time_constraint_type.ANY),
+                             obligation("role_1", "mission_1",
+                                        time_constraint_type.ANY),
+                             obligation("role_2", "mission_2", time_constraint_type.ANY)],
+                permissions=[permission("role_0", "mission_0", time_constraint_type.ANY),
+                             permission("role_1", "mission_1",
+                                        time_constraint_type.ANY),
+                             permission("role_2", "mission_2", time_constraint_type.ANY)]
+            ))
 
         return os_gosia
 
@@ -342,12 +418,12 @@ if __name__ == "__main__":
     #     structural_specifications=structural_specifications(roles=["role_2"], role_inheritance_relations=None, root_groups=None), functional_specifications=None, deontic_specifications=None)
 
     role_0_hs = history_subset([history([
-        ("[0 1 0 0 2 0 0 1 0]", 1), #0
-        ("[0 5 0 0 2 0 0 1 0]", 5), #1
-        ("[0 4 0 0 3 0 0 1 0]", 2), #2
-        ("[0 1 0 0 3 0 0 1 0]", 2), #2
-        ("[0 1 0 0 3 0 0 4 1]", 6), #3
-        ("[0 1 0 0 3 0 0 4 2]", 6), #3
+        ("[0 1 0 0 2 0 0 1 0]", 1),  # 0
+        ("[0 5 0 0 2 0 0 1 0]", 5),  # 1
+        ("[0 4 0 0 3 0 0 1 0]", 2),  # 2
+        ("[0 1 0 0 3 0 0 1 0]", 2),  # 2
+        ("[0 1 0 0 3 0 0 4 1]", 6),  # 3
+        ("[0 1 0 0 3 0 0 4 2]", 6),  # 3
         ("[0 1 0 0 2 0 0 5 1]", 0),
         ("[0 1 0 0 2 0 0 5 2]", 0),
         ("[0 1 0 0 2 0 0 4 3]", 0),
@@ -355,14 +431,14 @@ if __name__ == "__main__":
     ])])
 
     role_1_hs = history_subset([history([
-        ("[1 0 0 5 2 1 0 0 0]", 5), #1
-        ("[2 0 0 5 2 1 0 0 0]", 5), #1
-        ("[1 0 0 4 3 1 0 0 0]", 4), #2
-        ("[2 0 0 4 3 1 0 0 0]", 4), #2
-        ("[0 0 0 1 3 1 0 0 0]", 4), #2
-        ("[0 0 0 1 2 1 0 0 0]", 3), #0
-        ("[0 0 1 1 3 4 0 0 0]", 6), #3
-        ("[0 0 2 1 3 4 0 0 0]", 6), #3
+        ("[1 0 0 5 2 1 0 0 0]", 5),  # 1
+        ("[2 0 0 5 2 1 0 0 0]", 5),  # 1
+        ("[1 0 0 4 3 1 0 0 0]", 4),  # 2
+        ("[2 0 0 4 3 1 0 0 0]", 4),  # 2
+        ("[0 0 0 1 3 1 0 0 0]", 4),  # 2
+        ("[0 0 0 1 2 1 0 0 0]", 3),  # 0
+        ("[0 0 1 1 3 4 0 0 0]", 6),  # 3
+        ("[0 0 2 1 3 4 0 0 0]", 6),  # 3
         ("[0 0 1 1 2 5 0 0 0]", 0),
         ("[0 0 2 1 2 5 0 0 0]", 0),
         ("[1 0 0 4 2 1 0 0 0]", 0),
@@ -372,14 +448,14 @@ if __name__ == "__main__":
     ])])
 
     role_2_hs = history_subset([history([
-        ("[0 1 0 0 2 0 1 5 0]", 5), #2
-        ("[0 1 0 0 2 0 2 5 0]", 5), #2
-        ("[0 1 0 0 3 0 1 4 0]", 1), #3
-        ("[0 1 0 0 3 0 2 4 0]", 1), #3
-        ("[0 4 0 0 2 0 0 1 0]", 2), #1
-        ("[0 1 0 0 2 0 0 1 0]", 2), #1
-        ("[0 1 0 0 3 0 0 1 0]", 1), #3
-        ("[0 4 0 0 3 0 0 1 0]", 6), #1
+        ("[0 1 0 0 2 0 1 5 0]", 5),  # 2
+        ("[0 1 0 0 2 0 2 5 0]", 5),  # 2
+        ("[0 1 0 0 3 0 1 4 0]", 1),  # 3
+        ("[0 1 0 0 3 0 2 4 0]", 1),  # 3
+        ("[0 4 0 0 2 0 0 1 0]", 2),  # 1
+        ("[0 1 0 0 2 0 0 1 0]", 2),  # 1
+        ("[0 1 0 0 3 0 0 1 0]", 1),  # 3
+        ("[0 4 0 0 3 0 0 1 0]", 6),  # 1
         ("[0 5 0 0 2 0 0 1 0]", 0),
         ("[0 1 0 0 2 0 1 4 0]", 0),
         ("[0 1 0 0 2 0 3 4 0]", 0)])])

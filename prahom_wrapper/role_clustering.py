@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from scipy.cluster.hierarchy import dendrogram, linkage
 
-from history_model import action, observation
+from prahom_wrapper.history_model import action, observation
 
 
 def longest_common_subsequence(s1, s2):
@@ -153,8 +153,8 @@ def compute_role_clustering(joint_history: Dict[str, List[Union[observation, act
 
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    plt.show()
-    # plt.savefig('./tmp.png')
+    # plt.show()
+    plt.savefig('./role_clustering.png')
 
 
 # s1 = ["o0", "a0", "o1", "a0", "o1", "a0", "o1"]
@@ -170,4 +170,8 @@ def compute_role_clustering(joint_history: Dict[str, List[Union[observation, act
 
 joint_history = {'agent_0': [5, 2, 2, 2, 2, 2, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'agent_1': [0, 0, 0, 0, 0, 0, 0, 5, 4, 4, 4, 4, 4, 6, 0, 0, 0, 0, 0, 0, 0], 'agent_2': [0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 1, 1, 6]}
 
-compute_role_clustering(joint_history=joint_history)
+def generate_r_clustering():
+
+    joint_history = {'agent_0': [5, 2, 2, 2, 2, 2, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'agent_1': [0, 0, 0, 0, 0, 0, 0, 5, 4, 4, 4, 4, 4, 6, 0, 0, 0, 0, 0, 0, 0], 'agent_2': [0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 1, 1, 6]}
+
+    compute_role_clustering(joint_history=joint_history)
