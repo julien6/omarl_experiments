@@ -364,13 +364,19 @@ class joint_histories:
         for agent in self.ag_histories:
             self.ag_histories[agent].add_history(jt_hist[agent])
 
+    def add_joint_histories(self, jt_hist: Dict[str, histories]):
+        self.ag_histories = jt_hist
+
+    def add_history(self, jt_hist: history, agent: str):
+        for agent in self.ag_histories:
+            self.ag_histories[agent].add_history(jt_hist[agent])
+
     def add_joint_pattern_history(self, jt_patt_hist: Dict[str, pattern_histories]):
         for agent in self.ag_histories:
             self.ag_histories[agent].add_pattern(jt_patt_hist)
 
-    def add_history(self, jt_hist: joint_history):
-        for agent in self.ag_histories:
-            self.ag_histories[agent].add_history(jt_hist[agent])
+    def add_pattern_history(self, pattern_hist: pattern_histories, agent: str):
+        self.ag_histories[agent].add_pattern(pattern_hist)
 
 if __name__ == '__main__':
 

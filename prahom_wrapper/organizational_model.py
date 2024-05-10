@@ -6,6 +6,13 @@ from typing import Any, Callable, Dict, List
 
 INFINITY = 'INFINITY'
 
+class os_encoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, dict):
+            return
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        return super().default(o)
 
 class organizational_specification:
     """The basic class
@@ -273,15 +280,11 @@ class organizational_model:
                 d['deontic_specifications'])
         )
 
+    def convert_to_label(self) -> str:
+        json.dumps(dataclasses.asdict(self), indent=0, cls=os_encoder) 
 
-class os_encoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, dict):
-            return
-        if dataclasses.is_dataclass(o):
-            return dataclasses.asdict(o)
-        return super().default(o)
-
+    def convert_to_obj(self, os_label: str) -> 'organizational_model':
+        return organizational_model.from_dict(json.loads(os_label))
 
 if __name__ == "__main__":
 
