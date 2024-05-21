@@ -29,9 +29,11 @@ class action(object):
     """A basic class for any object to be an action."""
     pass
 
+
 class os_labels(str):
     """A basic class for a subset of organizational specifications."""
     pass
+
 
 class observation_label(str):
     """A basic string class to represent an observation as a label."""
@@ -59,15 +61,16 @@ class joint_history(Dict[str, List[Union[observation_label, action_label]]]):
 
 
 class history_subset:
-    """A class to represent a set of histories for a single agent.
+    """A class to represent a set of histories intended to be related to a single subset of organizational specifications for a single agent.
     """
 
-    history_graph: Dict[str, Dict[str, int]]
-    history_number: int
+    history_graph: Dict[Union[observation_label, action_label],
+                        Dict[Union[observation_label, action_label], Dict[int, cardinality]]]
+    ordinal_counter: int
 
     def __init__(self):
         self.history_graph = {}
-        self.history_number = -1
+        self.ordinal_counter = 0
 
     def add_observations_to_actions(self, observation_labels: List[observation_label], action_labels: List[action_label]):
         """Restrict history subset to those where any of the given observations is followed by any of the given actions.
@@ -96,8 +99,7 @@ class history_subset:
         for observation_label in observation_labels:
             for action_label in action_labels:
                 self.history_graph.setdefault(
-                    observation_label, {action_label: 0})
-                self.history_graph[observation_label][action_label] += 1
+                    observation_label, {action_label: {self.ordinal_counter: cardinality(1, 1)}})
 
     def add_actions_to_observations(self, action_labels: List[action_label], observation_labels: List[observation_label]):
         """Restrict history subset to those where any of the given actions is followed by any of the given observations.
@@ -123,11 +125,10 @@ class history_subset:
         --------
         None
         """
-        for action_label in action_labels:
-            for observation_label in observation_labels:
+        for observation_label in observation_labels:
+            for action_label in action_labels:
                 self.history_graph.setdefault(
-                    observation_label, {action_label: 0})
-                self.history_graph[observation_label][action_label] += 1
+                    action_label, {observation_label: {self.ordinal_counter: cardinality(1, 1)}})
 
     def add_history(self, history: history):
         """Add the given history in the history subset.
@@ -172,14 +173,24 @@ class history_subset:
         Examples
         --------
         >>> hs = history_subset()
-        >>> hs.add_pattern("[[obs1,act2](1,*)[obs2,[act2|act4],obs3,act3](1,1)](1,*)")
+        >>> hs.add_pattern("[obs1,act2,[obs4,act4](0,1)](1,*),obs2,[act2|act4],obs3,act3](1,*)")
 
         See Also
         --------
         None
         """
-        pass
+        
+        #Convert the pattern into nested list of (sequence,cardinality) couples,
+        # where sequence may be a list of labels, or a list of (sequence,cardinality) couples
+        # ex: "[obs1,act2,[obs4,act4](0,1)](1,*),obs2,[act2|act4],obs3,act3](1,*)"
+        #  -> ([obs1,act2,[obs4,act4](0,1)](1,*),obs2,[act2|act4],obs3,act3], ('1','*'))
+        #  -> ([[obs1,act2](1,1),[obs4,act4]](1,*),[obs2,[act2|act4],obs3,act3](1,1)], ('1','*'))
+        #  -> ([([obs1,act2],(1,1)),[obs4,act4](0,1)](1,*),[obs2,[act2|act4],obs3,act3](1,1)], ('1','*'))
 
+        # (([*sequence*]),('*cardinaltiy.lowerbound*','*cardinality.upperbound*'))
+
+        def patter_parse(self, string_pattern: str) -> Tuple[List,Tuple[1,1]]:
+            
 
 class joint_history_subset:
     """A class to represent each agent's history subset as a joint-history subset."""
@@ -272,7 +283,8 @@ class osh_manager():
         Initiates the relation from organizational specifications (under the form of an organizational) to a subset of joint histories.
     """
 
-    osh_graph: Dict[Union[observation_label,action_label],Dict[Union[observation_label,action_label], Dict[os_labels, Dict[int, cardinality]]]]
+    osh_graph: Dict[Union[observation_label, action_label],
+                    Dict[Union[observation_label, action_label], Dict[os_labels, Dict[int, cardinality]]]]
     """The main graph that represents all (observation,action) and (action,observations) couples of all agents histories decorated with os labels,
     and ordinal number (int) with cardinality."""
 
