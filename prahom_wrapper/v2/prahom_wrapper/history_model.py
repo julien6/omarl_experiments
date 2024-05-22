@@ -34,7 +34,7 @@ class action(object):
     pass
 
 
-class os_labels(str):
+class os_label(str):
     """A basic class for a subset of organizational specifications."""
     pass
 
@@ -367,9 +367,9 @@ class history_subset:
 class joint_history_subset:
     """A class to represent each agent's history subset as a joint-history subset."""
 
-    def __init__(self):
+    history_graph: Dict[Union[observation_label,action_label], Dict[Union[observation_label,action_label, Dict[]]]]
 
-    history_graph: Dict[str, Dict[str, int]]
+    def __init__(self):
 
 
 class os_factory:
@@ -459,7 +459,7 @@ class osh_manager():
     """
 
     osh_graph: Dict[Union[observation_label, action_label],
-                    Dict[Union[observation_label, action_label], Dict[os_labels, Dict[int, cardinality]]]]
+                    Dict[Union[observation_label, action_label], Dict[os_label, Dict[int, cardinality]]]]
     """The main graph that represents all (observation,action) and (action,observations) couples of all agents histories decorated with os labels,
     and ordinal number (int) with cardinality."""
 
