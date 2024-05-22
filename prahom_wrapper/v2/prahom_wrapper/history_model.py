@@ -1,3 +1,7 @@
+import sys
+sys.path
+sys.path.append('../../../.')
+
 import copy
 from dataclasses import dataclass, field
 import dataclasses
@@ -9,11 +13,11 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 import networkx as nx
 import matplotlib.pyplot as plt
 from pprint import pprint
+import re
 
 import numpy as np
 from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
 from PIL import Image
-from prahom_wrapper.pattern_utils import eval_str_history_pattern, parse_str_history_pattern, history_pattern
 from prahom_wrapper.utils import draw_networkx_edge_labels
 
 INFINITY = 'INFINITY'
@@ -130,6 +134,39 @@ class history_subset:
                 self.history_graph.setdefault(
                     action_label, {observation_label: {self.ordinal_counter: cardinality(1, 1)}})
 
+
+    def add_labels_to_labels(self, src_labels: List[Union[action_label,observation_label]],
+                             dst_labels: List[Union[action_label,observation_label]],
+                             src_to_dst_cardinality: cardinality = cardinality(1,1)):
+        """Restrict history subset to those where any of the given actions is followed by any of the given observations.
+
+        Parameters
+        ----------
+        src_labels : List[Union[action_label,observation_label]]
+            The given source labels
+
+        dst_labels : List[Union[action_label,observation_label]]
+            The given destination labels 
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        >>> hs = history_subset()
+        >>> hs.add_labels_to_labels(["act1","act2"], ["obs1","obs2"])
+
+        See Also
+        --------
+        None
+        """
+        for src_label in src_labels:
+            for dst_label in dst_labels:
+                self.history_graph.setdefault(
+                    src_label, {dst_label: {self.ordinal_counter: src_to_dst_cardinality}})
+
+
     def add_history(self, history: history):
         """Add the given history in the history subset.
 
@@ -180,17 +217,78 @@ class history_subset:
         None
         """
         
-        #Convert the pattern into nested list of (sequence,cardinality) couples,
-        # where sequence may be a list of labels, or a list of (sequence,cardinality) couples
-        # ex: "[obs1,act2,[obs4,act4](0,1)](1,*),obs2,[act2|act4],obs3,act3](1,*)"
-        #  -> ([obs1,act2,[obs4,act4](0,1)](1,*),obs2,[act2|act4],obs3,act3], ('1','*'))
-        #  -> ([[obs1,act2](1,1),[obs4,act4]](1,*),[obs2,[act2|act4],obs3,act3](1,1)], ('1','*'))
-        #  -> ([([obs1,act2],(1,1)),[obs4,act4](0,1)](1,*),[obs2,[act2|act4],obs3,act3](1,1)], ('1','*'))
+        def uniformize(string_pattern: str) -> str:
+            regex = r'[\[]([\",0-9A-Za-z]{2,}?),\(|\),([\",0-9A-Za-z]{2,}?)\],\('
+            matches = re.findall(regex, string_pattern)
+            for group in matches:
+                group = group[0]
+                if group != "":
+                    string_pattern = string_pattern.replace(group, f"([{group}],('1','1'))")
+            return string_pattern
 
-        # (([*sequence*]),('*cardinaltiy.lowerbound*','*cardinality.upperbound*'))
+        def convert_to_tuple(string_pattern: str) -> Tuple[List,cardinality]:
+            stack = []
+            i = 0
+            while i < len(string_pattern):
+                character = string_pattern[i]
+                if character == "[":
+                    stack += ["["]
+                elif character == "]":
+                    stack[-1] += "]"
+                    if string_pattern[i+1] == "(":
+                        card = ""
+                        i += 1
+                        while i < len(string_pattern):
+                            char_card = string_pattern[i]
+                            card += char_card
+                            if char_card == ")":
+                                break
+                            i += 1
+                        sequence = stack.pop()
+                        sequence = f'({sequence},{card})'
+                        if(i== len(string_pattern) - 1):
+                            seq = sequence.replace("[", "[\"").replace("]","\"]") \
+                                .replace("(", "(\"").replace(")","\")").replace(",","\",\"") \
+                                .replace("\"(","(").replace(")\"",")") \
+                                .replace("\"[","[").replace("]\"","]")
+                            seq = uniformize(seq)
+                            return eval(seq)
+                        stack[-1] += sequence
+                else:
+                    stack[-1] += character
+                i += 1
+        
+        tuple_pattern = convert_to_tuple(history_pattern)
 
-        def patter_parse(self, string_pattern: str) -> Tuple[List,Tuple[1,1]]:
+        def is_only_labels(tuple_pattern: Tuple[List,cardinality]) -> bool:
+            label_or_tuple_list, card = tuple_pattern
+            for label_or_tuple in label_or_tuple_list:
+                if type(label_or_tuple) == tuple:
+                    return False
+            return True
+
+        self.last_label = None
+
+        def parse_into_graph(tuple_pattern: Tuple[List,cardinality]) -> None:
+
+            if is_only_labels(tuple_pattern):
+
+                labels_sequence, card = tuple_pattern
+
+                for i, label in labels_sequence.items():
+                    if self.last_label is None:
+                        self.last_label = label
+                    else:
+                        self.add_labels_to_labels([self.last_label],[label])
+                        if i == (len(labels_sequence) - 1):
+                            self.add_labels_to_labels([self.last_label],[labels_sequence[0]],
+                                                      src_to_dst_cardinality=cardinality(card[0],card[1]))
+                            return labels_sequence[0]
+                        self.last_label = label
             
+            else:                
+                for i, sub_tuple_or_label in tuple_pattern.items():
+                    start_label = parse_into_graph(sub_tuple_or_label)
 
 class joint_history_subset:
     """A class to represent each agent's history subset as a joint-history subset."""
@@ -334,21 +432,25 @@ class osh_manager():
 
 if __name__ == '__main__':
 
-    oshr = osh_manager()
+    hs = history_subset()
+    # hs.add_pattern("[obs1,act1,[obs2,act2](1,2)](1,*)")
+    hs.add_pattern("[obs1,act1,[obs2,act2,[obs3,act3](2,2),[obs14,[act45,obs78](0,*),act15](14,12),[obs3,act3](2,2),obs4,act4](1,2)](1,*)")
 
-    oshr.create_relation(
-        organizational_model=OSF.new()
-        .add_role("Role_0")
-        .create(),
-        joint_history_subset=JHF.new()
-        .add_a_history_subset(
-            agents_number_among_all=1,
-            history_subsets=[HF.new()
-                             .add_rule("o1", "a1")
-                             .add_pattern("[[obs1,act1](1,*)[obs2,act2](0,*)obs3,act4](1,2)")
-                             .add_history([("o1", "a1"), ("o2", "a2")])
-                             .create()])
-        .create()
-    )
+    # oshr = osh_manager()
+
+    # oshr.create_relation(
+    #     organizational_model=OSF.new()
+    #     .add_role("Role_0")
+    #     .create(),
+    #     joint_history_subset=JHF.new()
+    #     .add_a_history_subset(
+    #         agents_number_among_all=1,
+    #         history_subsets=[HF.new()
+    #                          .add_rule("o1", "a1")
+    #                          .add_pattern("[[obs1,act1](1,*)[obs2,act2](0,*)obs3,act4](1,2)")
+    #                          .add_history([("o1", "a1"), ("o2", "a2")])
+    #                          .create()])
+    #     .create()
+    # )
 
     # oshr.from_role("Role_0").to_history_subset(hf.new().add_rule("o1", "a1").add_pattern().add_history())

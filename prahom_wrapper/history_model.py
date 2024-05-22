@@ -408,9 +408,9 @@ if __name__ == '__main__':
 
     # hg.add_pattern("[[o0,a0,o1](1,1)[a2,o2](1,1)](7,7)]")
 
-    hg.add_pattern("[0,1](1,1)")
-    hg.add_pattern("[0,1](3,3)")
-    print(hg.walk_with_history(["0", "1", "0", "1", "0", "1"]))
+    # hg.add_pattern("[0,1](1,1)")
+    # hg.add_pattern("[0,1](3,3)")
+    # print(hg.walk_with_history(["0", "1", "0", "1", "0", "1"]))
 
-    graph_plot = hg.generate_graph_plot(show=True, transition_data=[
-                                        "ord_num_to_card"])
+    # graph_plot = hg.generate_graph_plot(show=True, transition_data=[
+    #                                     "ord_num_to_card"])
