@@ -48,21 +48,17 @@ class action_label(str):
     """A basic string class to represent an action as a label."""
     pass
 
+class history_pattern(str):
+    """A basic class to represent a subset of histories matching a sequence pattern."""
+    pass
 
 class history(List[Tuple[observation_label, action_label]]):
     """A basic class to represent a single agent's history as a list of (observation, action) couples."""
     pass
 
-
-class history_pattern(str):
-    """A basic class to represent a subset of histories matching a sequence pattern."""
-    pass
-
-
 class joint_history(Dict[str, List[Union[observation_label, action_label]]]):
     """A basic class to represent a joint-history."""
     pass
-
 
 class history_subset:
     """A class to represent a set of histories intended to be related to a single subset of organizational specifications for a single agent.
@@ -103,7 +99,11 @@ class history_subset:
         for observation_label in observation_labels:
             for action_label in action_labels:
                 self.history_graph.setdefault(
-                    observation_label, {action_label: {self.ordinal_counter: cardinality(1, 1)}})
+                    observation_label, {})
+                self.history_graph[observation_label].setdefault(
+                    action_label, {})
+                self.history_graph[observation_label][action_label][self.ordinal_counter] = cardinality(1, 1)
+        self.ordinal_counter += 1
 
     def add_actions_to_observations(self, action_labels: List[action_label], observation_labels: List[observation_label]):
         """Restrict history subset to those where any of the given actions is followed by any of the given observations.
@@ -132,8 +132,11 @@ class history_subset:
         for observation_label in observation_labels:
             for action_label in action_labels:
                 self.history_graph.setdefault(
-                    action_label, {observation_label: {self.ordinal_counter: cardinality(1, 1)}})
-
+                    action_label, {})
+                self.history_graph[action_label].setdefault(
+                    observation_label, {})
+                self.history_graph[action_label][observation_label][self.ordinal_counter] = cardinality(1, 1)
+        self.ordinal_counter += 1
 
     def add_labels_to_labels(self, src_labels: List[Union[action_label,observation_label]],
                              dst_labels: List[Union[action_label,observation_label]],
@@ -164,8 +167,11 @@ class history_subset:
         for src_label in src_labels:
             for dst_label in dst_labels:
                 self.history_graph.setdefault(
-                    src_label, {dst_label: {self.ordinal_counter: src_to_dst_cardinality}})
-
+                    src_label, {})
+                self.history_graph[src_label].setdefault(
+                    dst_label, {})
+                self.history_graph[src_label][dst_label][self.ordinal_counter] = src_to_dst_cardinality
+        self.ordinal_counter += 1
 
     def add_history(self, history: history):
         """Add the given history in the history subset.
@@ -218,10 +224,12 @@ class history_subset:
         """
         
         def uniformize(string_pattern: str) -> str:
-            regex = r'[\[]([\",0-9A-Za-z]{2,}?),\(|\),([\",0-9A-Za-z]{2,}?)\],\('
+
+            regex = r'\[([\",0-9A-Za-z]{2,}?),[\(\[]|\),([\",0-9A-Za-z]{2,}?)\],\('
             matches = re.findall(regex, string_pattern)
+
             for group in matches:
-                group = group[0]
+                group = group[0] if group[0] != "" else group[1]
                 if group != "":
                     string_pattern = string_pattern.replace(group, f"([{group}],('1','1'))")
             return string_pattern
@@ -273,25 +281,93 @@ class history_subset:
 
             if is_only_labels(tuple_pattern):
 
-                labels_sequence, card = tuple_pattern
+                labels_sequence, labels_card = tuple_pattern
 
-                for i, label in labels_sequence.items():
+                for label in labels_sequence:
                     if self.last_label is None:
                         self.last_label = label
                     else:
                         self.add_labels_to_labels([self.last_label],[label])
-                        if i == (len(labels_sequence) - 1):
-                            self.add_labels_to_labels([self.last_label],[labels_sequence[0]],
-                                                      src_to_dst_cardinality=cardinality(card[0],card[1]))
-                            return labels_sequence[0]
                         self.last_label = label
-            
-            else:                
-                for i, sub_tuple_or_label in tuple_pattern.items():
-                    start_label = parse_into_graph(sub_tuple_or_label)
+                if not(labels_card[0] == "1" and labels_card[1] == "1"):
+                    self.add_labels_to_labels([self.last_label],[labels_sequence[0]],
+                                                src_to_dst_cardinality=cardinality(labels_card[0],labels_card[1]))
+                return labels_sequence[0]
+
+            else:
+                tuples_sequence, sequences_card = tuple_pattern
+                start_label = copy.copy(self.last_label)
+                for i, sub_tuple in enumerate(tuples_sequence):
+                    sl = parse_into_graph(sub_tuple)
+                    if i == 0:
+                        start_label = sl
+                if not(sequences_card[0] == "1" and sequences_card[1] == "1"):
+                    self.add_labels_to_labels([self.last_label],[start_label],
+                                src_to_dst_cardinality=cardinality(sequences_card[0],sequences_card[1]))
+
+        parse_into_graph(tuple_pattern)
+
+    def plot_graph(self, show: bool = False, render_rgba: bool = False, save: bool = False):
+
+        # Create a directed graph object
+        G = nx.DiGraph()
+
+        oriented_edges = {}
+
+        for src_label in self.history_graph:
+            for dst_label in self.history_graph[src_label]:
+                G.add_edge(src_label, dst_label)
+                if (src_label, dst_label) in oriented_edges.keys():
+                    return
+                oriented_edges[(src_label,dst_label)] = str(self.history_graph[src_label][dst_label])
+        
+        # Draw the graph
+        pos = nx.spring_layout(G)
+        fig, ax = plt.subplots()
+        nx.draw_networkx_nodes(G, pos, ax=ax)
+        nx.draw_networkx_labels(G, pos, ax=ax)
+
+        curved_edges = [
+            edge for edge in G.edges() if reversed(edge) in G.edges()]
+        straight_edges = list(set(G.edges()) - set(curved_edges))
+        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=straight_edges)
+        arc_rad = 0.25
+        nx.draw_networkx_edges(
+            G, pos, ax=ax, edgelist=curved_edges, connectionstyle=f'arc3, rad = {arc_rad}')
+
+        curved_edge_labels = {edge: oriented_edges[(
+            f'{edge[0]}', f'{edge[1]}')] for edge in curved_edges}
+        straight_edge_labels = {edge: oriented_edges[(
+            f'{edge[0]}', f'{edge[1]}')] for edge in straight_edges}
+        draw_networkx_edge_labels(
+            G, pos, ax=ax, edge_labels=curved_edge_labels, rotate=False, rad=arc_rad)
+        nx.draw_networkx_edge_labels(
+            G, pos, ax=ax, edge_labels=straight_edge_labels, rotate=False)
+
+        # Show the plot
+        if (save):
+            fig.savefig(f"{random.randint(1, 100)}.png",
+                        bbox_inches='tight', pad_inches=0)
+        if (show):
+            plt.show()
+
+        if (render_rgba):
+            # fig.canvas.draw()
+            # return Image.frombytes('RGB',
+            # fig.canvas.get_width_height(),fig.canvas.tostring_rgb())
+
+            fig.canvas.draw()  # Draw the canvas, cache the renderer
+            image_flat = np.frombuffer(
+                fig.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+            # NOTE: reversed converts (W, H) from get_width_height to (H, W)
+            image = image_flat.reshape(
+                *reversed(fig.canvas.get_width_height()), 3)  # (H, W, 3)
+            return image
 
 class joint_history_subset:
     """A class to represent each agent's history subset as a joint-history subset."""
+
+    def __init__(self):
 
     history_graph: Dict[str, Dict[str, int]]
 
@@ -315,25 +391,6 @@ class os_factory:
     def create(self) -> organizational_model:
         return self.os_model
 
-
-class joint_history_factory:
-
-    jh_subset: joint_history_subset
-
-    def __init__(self) -> None:
-        self.jh_subset = None
-
-    def new(self) -> 'joint_history_factory':
-        self.jh_subset = joint_history_subset()
-        return self
-
-    def add_a_history_subset(self, agents_number_among_all: int, history_subsets: List[history_subset]) -> 'joint_history_factory':
-        return self
-
-    def create(self) -> joint_history_subset:
-        return self.jh_subset
-
-
 class history_factory:
     h_subset: history_subset
 
@@ -354,6 +411,26 @@ class history_factory:
 
     def create(self) -> history_subset:
         return self.h_subset
+
+class joint_history_factory:
+
+    jh_subset: joint_history_subset
+
+    def __init__(self) -> None:
+        self.jh_subset = None
+
+    def new(self) -> 'joint_history_factory':
+        self.jh_subset = joint_history_subset()
+        return self
+
+    def add_a_history_subset(self, agents_number_among_all: int, history_subsets: List[history_subset]) -> 'joint_history_factory':
+        return self
+
+    def create(self) -> joint_history_subset:
+        return self.jh_subset
+
+
+
 
 
 OSF = os_factory()
@@ -433,8 +510,18 @@ class osh_manager():
 if __name__ == '__main__':
 
     hs = history_subset()
-    # hs.add_pattern("[obs1,act1,[obs2,act2](1,2)](1,*)")
+    # hs.add_pattern("[obs1,[act2,obs2](1,2),act3](1,*)")
     hs.add_pattern("[obs1,act1,[obs2,act2,[obs3,act3](2,2),[obs14,[act45,obs78](0,*),act15](14,12),[obs3,act3](2,2),obs4,act4](1,2)](1,*)")
+    # hs.plot_graph(show=True)
+
+    hs = history_subset()
+    hs.add_actions_to_observations(["obs1"],["act1"])
+    hs.add_actions_to_observations(["obs2"],["act2"])
+    # hs.plot_graph(show=True)
+
+    hs = history_subset()
+    hs.add_history([("obs1","act1"),("obs2","act2"),("obs3","act3")])
+    # hs.plot_graph(show=True)
 
     # oshr = osh_manager()
 
