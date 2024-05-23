@@ -364,13 +364,45 @@ class history_subset:
                 *reversed(fig.canvas.get_width_height()), 3)  # (H, W, 3)
             return image
 
-class joint_history_subset:
-    """A class to represent each agent's history subset as a joint-history subset."""
+class os_agent_joint_history_subset:
+    """A class to represent each agent's history subset from given organizational specifications and agents."""
 
-    history_graph: Dict[Union[observation_label,action_label], Dict[Union[observation_label,action_label, Dict[]]]]
+    history_graph: Dict[Union[observation_label,action_label], Dict[Union[observation_label,action_label, Dict[os_label, Dict[int,cardinality]]]]]
 
     def __init__(self):
+        self.history_graph = {}
+    
+    def add_osa_jh_relation(self, os_label: os_label, agent_number_among_all: Union[int,str], history_subsets: List[history_subset]):
+        """Add a relation between a couple (os, agent subset) to given history subsets.
 
+        Parameters
+        ----------
+        os_label : os_label
+            The given organizational specification label
+
+        agent_number_among_all : int | str
+            The agent subset size among all agents that can be related to given os
+        
+        history_subsets: List[history_subset]
+            The history subsets that related agents are to be in
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        Create a couple between a role that can be related to at least one agent among all.
+        That couple is associated to a simple history subset.
+        >>> h = history_subset()
+        >>> h.add_actions_to_observations(["act1"],["obs1"])
+        >>> hs = os_agent_joint_history_subset()
+        >>> hs.add_osa_jh_relation("role_0", 1, [h])
+
+        See Also
+        --------
+        None
+        """
 
 class os_factory:
 
@@ -414,19 +446,19 @@ class history_factory:
 
 class joint_history_factory:
 
-    jh_subset: joint_history_subset
+    jh_subset: os_agent_joint_history_subset
 
     def __init__(self) -> None:
         self.jh_subset = None
 
     def new(self) -> 'joint_history_factory':
-        self.jh_subset = joint_history_subset()
+        self.jh_subset = os_agent_joint_history_subset()
         return self
 
     def add_a_history_subset(self, agents_number_among_all: int, history_subsets: List[history_subset]) -> 'joint_history_factory':
         return self
 
-    def create(self) -> joint_history_subset:
+    def create(self) -> os_agent_joint_history_subset:
         return self.jh_subset
 
 
@@ -454,7 +486,7 @@ class osh_manager():
 
     Methods
     -------
-    create_relation(self, organizational_model: organizational_model, joint_history_subset: joint_history_subset) -> 'osh_manager':
+    create_relation(self, organizational_model: organizational_model, os_agent_joint_history_subset: os_agent_joint_history_subset) -> 'osh_manager':
         Initiates the relation from organizational specifications (under the form of an organizational) to a subset of joint histories.
     """
 
@@ -466,7 +498,7 @@ class osh_manager():
     def __init__(self) -> None:
         self.osh_graph = {}
 
-    def create_relation(self, organizational_model: organizational_model, joint_history_subset: joint_history_subset) -> 'osh_manager':
+    def create_relation(self, organizational_model: organizational_model, os_agent_joint_history_subset: os_agent_joint_history_subset) -> 'osh_manager':
         """Initiates the relation from organizational specifications (under the form of an organizational) to a subset of joint histories.
 
         Parameters
@@ -474,7 +506,7 @@ class osh_manager():
         organizational_model : organizational_model
             An organizational model describing organizational specifications
 
-        joint_history_subset: joint_history_subset
+        os_agent_joint_history_subset: os_agent_joint_history_subset
             A subset of joint-histories describing how a subset of agent adopting the organizational specifications should behave
 
         Returns
@@ -490,7 +522,7 @@ class osh_manager():
                 organizational_model=OSF.new()
                 .add_role("Role_0")
                 .create(),
-                joint_history_subset=JHF.new()
+                os_agent_joint_history_subset=JHF.new()
                 .add_a_history_subset(
                     agents_number_among_all=1,
                     history_subsets=[HF.new()
@@ -529,7 +561,7 @@ if __name__ == '__main__':
     #     organizational_model=OSF.new()
     #     .add_role("Role_0")
     #     .create(),
-    #     joint_history_subset=JHF.new()
+    #     os_agent_joint_history_subset=JHF.new()
     #     .add_a_history_subset(
     #         agents_number_among_all=1,
     #         history_subsets=[HF.new()
