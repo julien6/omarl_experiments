@@ -427,7 +427,34 @@ class os_to_history_subset_relations:
                     self.history_graph[src_label][dst_label][os_agent_label] = ordinal_number_to_cardinality
     
     def get_os_from_joint_history(self, joint_history: joint_history) -> Dict[str, List[os_label]]:
-        
+        """Get the organizational specifications from a joint-history.
+
+        Parameters
+        ----------
+        os_label : os_label
+            The given organizational specification label
+
+        Returns
+        -------
+        Dict[str, List[os_label]]
+            `Dict[str, List[os_label]]` the organizational specifications associated with each agent
+
+        Examples
+        --------
+        Get organizational specifications from a simple joint-history
+        >>> h = history_subset()
+        >>> jh = {"agent_1": copy.deepcopy(h), "agent_2": copy.deepcopy(h)}
+        >>> h.add_actions_to_observations(["act1"],["obs1"])
+        >>> jh["agent_0"] = h
+        >>> hs = os_to_history_subset_relations()
+        >>> hs.add_os_to_history_subset_relation("role_0", [h])
+        >>> hs.get_os_from_joint_history(jh)
+        ["agent_0": "role_0", "agent_1": None, "agent_2": None]
+
+        See Also
+        -------
+        None
+        """
         joint_matching_os_labels: Dict[str, List[os_label]] = {}
         for agent, history in joint_history.items():
             matching_os_labels: List[List[os_label]] = []
@@ -457,8 +484,7 @@ class os_to_history_subset_relations:
     def get_next_actions_from_observation_and_os(self, observation_label: observation_label, os_label: os_label) -> joint_history_subset:
 
         for action_label in self.history_graph.get(observation_label, {}):
-            os_labels = list(self.history_graph[observation_label][action_label].keys())
-            if os_label in os_labels:
+            if os_label in self.history_graph[observation_label][action_label]:
                 return action_label
         return None
 
