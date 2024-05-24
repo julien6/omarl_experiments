@@ -2,23 +2,22 @@ import sys
 sys.path
 sys.path.append('../../../.')
 
-from prahom_wrapper.utils import draw_networkx_edge_labels
-from PIL import Image
-from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
-import numpy as np
-import re
-from pprint import pprint
-import matplotlib.pyplot as plt
-import networkx as nx
-from typing import Any, Callable, Dict, List, Tuple, Union
-import random
-import json
-import itertools
-from enum import Enum
-import dataclasses
-from dataclasses import dataclass, field
 import copy
-
+from dataclasses import dataclass, field
+import dataclasses
+from enum import Enum
+import itertools
+import json
+import random
+from typing import Any, Callable, Dict, List, Tuple, Union
+import networkx as nx
+import matplotlib.pyplot as plt
+from pprint import pprint
+import re
+import numpy as np
+from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
+from PIL import Image
+from prahom_wrapper.utils import draw_networkx_edge_labels
 
 
 INFINITY = 'INFINITY'
@@ -420,24 +419,28 @@ class os_to_history_subset_relations:
             for src_label in history_subset.history_graph:
                 self.history_graph.setdefault(src_label, {})
                 for dst_label in history_subset.history_graph[src_label]:
-                    self.history_graph[src_label].setdefault(src_label, {})
-                    os_agent_label = os_label + "_" + "{" + str(agent_index) + "/" + str(len(history_subsets)) + "}"
-                    self.history_graph[src_label][dst_label].setdefault(os_agent_label, {})
-                    ordinal_number_to_cardinality = copy.deepcopy(history_subset.history_graph[src_label][dst_label])
-                    self.history_graph[src_label][dst_label][os_agent_label] = ordinal_number_to_cardinality
-    
+                    self.history_graph[src_label].setdefault(dst_label, {})
+                    os_agent_label = os_label + "_" + \
+                        "{" + str(agent_index) + "/" + \
+                        str(len(history_subsets)) + "}"
+                    self.history_graph[src_label][dst_label].setdefault(
+                        os_agent_label, {})
+                    ordinal_number_to_cardinality = copy.deepcopy(
+                        history_subset.history_graph[src_label][dst_label])
+                    self.history_graph[src_label][dst_label][os_agent_label].update(ordinal_number_to_cardinality)
+
     def get_os_from_joint_history(self, joint_history: joint_history) -> Dict[str, List[os_label]]:
         """Get the organizational specifications from a joint-history.
 
         Parameters
         ----------
-        os_label : os_label
-            The given organizational specification label
+        joint_history : joint_history
+            The given joint-history
 
         Returns
         -------
         Dict[str, List[os_label]]
-            `Dict[str, List[os_label]]` the organizational specifications associated with each agent
+            `Dict[str, List[os_label]]` the organizational specifications associated with agent
 
         Examples
         --------
@@ -455,38 +458,121 @@ class os_to_history_subset_relations:
         -------
         None
         """
+
         joint_matching_os_labels: Dict[str, List[os_label]] = {}
         for agent, history in joint_history.items():
-            matching_os_labels: List[List[os_label]] = []
-            for src_label, dst_label in history:
+            auxiliary_history_graph: Dict[Union[observation_label, action_label],
+                        Dict[Union[observation_label, action_label], Dict[os_label, Dict[int, cardinality]]]] = {}
+            ordinal_number = 0
+            os_labels = []
+            for label_transition in history:
+                src_label, dst_label = label_transition
+                
+                os_transition_labels = list(self.history_graph.get(src_label, {}).get(dst_label, {}).keys())
 
-                os_labels = list(self.history_graph[src_label][dst_label].keys())
-                if len(os_label) > 0 and (os_labels not in matching_os_labels):
-                    matching_os_labels += [list(set(os_labels))]
-        
+                for osl in os_label:
+
+                    ordinal_numbers = list(self.history_graph[src_label][dst_label][osl].keys())
+
+                    if ordinal_number in ordinal_numbers:
+
+                        card = self.history_graph[src_label][dst_label][osl][ordinal_number]
+                        if not(card.lower_bound == 1 and card.upper_bound == 1):
+                            auxiliary_history_graph.setdefault(src_label, {})
+                            auxiliary_history_graph[src_label].setdefault(dst_label, {})
+                            auxiliary_history_graph[src_label].setdefault(dst_label, {})
+                            ordinal_number = None
+                        
+                    ordinal_number += 1
+
             joint_matching_os_labels[agent] = list(matching_os_labels)
-        
+
         return joint_matching_os_labels
 
-    def get_joint_history_subset_from_os(self, os_label: os_label) -> joint_history_subset:
-        
-        hs: Dict[Union[observation_label, action_label],
-                        Dict[Union[observation_label, action_label], Dict[int, cardinality]]] = {}
+    def get_joint_history_subsets_from_os(self, os_label: os_label) -> List[joint_history_subset]:
+        """Get the joint-history subsets associated with organizational specifications.
+
+        Parameters
+        ----------
+        os_label : os_label
+            The given organizational specification label
+
+        Returns
+        -------
+        List[joint_history_subset]
+            `List[joint_history_subset]` the joint-history subsets associated with given organizational specification label
+
+        Examples
+        --------
+        Get organizational specifications from a simple joint-history
+        >>> h = history_subset()
+        >>> jh = {"agent_1": copy.deepcopy(h), "agent_2": copy.deepcopy(h)}
+        >>> h.add_actions_to_observations(["act1"],["obs1"])
+        >>> jh["agent_0"] = h
+        >>> hs = os_to_history_subset_relations()
+        >>> hs.add_os_to_history_subset_relation("role_0", [h])
+        >>> hs.get_joint_history_subset_from_os("role_0")
+
+        See Also
+        -------
+        None
+        """
+
+        agents_hs: Dict[str, Dict[Union[observation_label, action_label],
+                        Dict[Union[observation_label, action_label], Dict[int, cardinality]]]] = {}
         for src_label in self.history_graph:
-            hs.setdefault(src_label, {})
             for dst_label in self.history_graph[src_label]:
-                hs[src_label].setdefault(dst_label, {})
                 os_labels = self.history_graph[src_label][dst_label].keys()
-                if os_label in os_labels:
-                    hs[src_label][dst_label] = copy.deepcopy(self.history_graph[src_label][dst_label][os_label])
-        return hs
+                for osl in os_labels:
+                    if os_label in osl:
+                        agents_hs.setdefault(osl, {})
+                        agents_hs[osl].setdefault(src_label, {})
+                        agents_hs[osl][src_label].setdefault(dst_label, {})
+                        agents_hs[osl][src_label][dst_label] = copy.deepcopy(
+                            self.history_graph[src_label][dst_label][os_label])
 
-    def get_next_actions_from_observation_and_os(self, observation_label: observation_label, os_label: os_label) -> joint_history_subset:
+        return list(agents_hs.values())
 
+    def get_next_actions_from_observation_and_os(self, joint_history: joint_history, \
+                                                 observation_label: observation_label, os_label: os_label) -> List[action_label]:
+        """According to organizational specifications, get the next actions that should be played when a joint-history has already been played and an observation is received.
+
+        Parameters
+        ----------
+        joint_history: joint_history
+            The joint-history that has already been played
+
+        observation_label : observation_label
+            The received observation label
+        
+        os_label : os_label
+            The given organizational specification label
+
+        Returns
+        -------
+        List[action_label]
+            `List[action_label]` the action labels that can be chosen according to given os and played joint-history
+
+        Examples
+        --------
+        Get organizational specifications from a simple joint-history
+        >>> h = history_subset()
+        >>> jh = {"agent_1": copy.deepcopy(h), "agent_2": copy.deepcopy(h)}
+        >>> h.add_actions_to_observations(["act1"],["obs1"])
+        >>> jh["agent_0"] = h
+        >>> hs = os_to_history_subset_relations()
+        >>> hs.add_os_to_history_subset_relation("role_0", [h])
+        >>> hs.get_joint_history_subset_from_os("role_0")
+
+        See Also
+        -------
+        None
+        """
         for action_label in self.history_graph.get(observation_label, {}):
             if os_label in self.history_graph[observation_label][action_label]:
                 return action_label
         return None
+
 
 class os_factory:
 
