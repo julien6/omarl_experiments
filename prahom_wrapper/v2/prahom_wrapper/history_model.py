@@ -231,14 +231,33 @@ class history_subset:
 
         def uniformize(string_pattern: str) -> str:
 
-            regex = r'\[([\",0-9A-Za-z]{2,}?),[\(\[]|\),([\",0-9A-Za-z]{2,}?)\],\('
+            # lonely labels in the begining of sequences
+            regex = r'\[([\",0-9A-Za-z]{2,}?),\('
+            matches = re.findall(regex, string_pattern)
+            
+            for group in matches:
+                if group != "":
+                    string_pattern = string_pattern.replace(
+                        '[' + group + ',(', '[' + f"([{group}],('1','1'))" + ',(')
+
+            # lonely labels in the middle of sequences
+            regex = r'\)\),([\",0-9A-Za-z]{2,}?),\('
             matches = re.findall(regex, string_pattern)
 
             for group in matches:
-                group = group[0] if group[0] != "" else group[1]
                 if group != "":
                     string_pattern = string_pattern.replace(
-                        group, f"([{group}],('1','1'))")
+                        ')),' + group + ',(', ')),' + f"([{group}],('1','1'))" + ',(')
+
+            # lonely labels in the end of sequences
+            regex = r'\),([\",0-9A-Za-z]{2,}?)\],\('
+            matches = re.findall(regex, string_pattern)
+
+            for group in matches:
+                if group != "":
+                    string_pattern = string_pattern.replace(
+                        '),'+ group +'],(', '),'+ f"([{group}],('1','1'))" +'],(')
+
             return string_pattern
 
         def convert_to_tuple(string_pattern: str) -> Tuple[List, cardinality]:
@@ -274,6 +293,7 @@ class history_subset:
                 i += 1
 
         tuple_pattern = convert_to_tuple(history_pattern)
+        print(tuple_pattern)
 
         def is_only_labels(tuple_pattern: Tuple[List, cardinality]) -> bool:
             label_or_tuple_list, card = tuple_pattern
@@ -283,6 +303,7 @@ class history_subset:
             return True
 
         self.last_label = None
+        self.optional_sequences_labels = []
 
         def parse_into_graph(tuple_pattern: Tuple[List, cardinality]) -> None:
 
@@ -290,13 +311,16 @@ class history_subset:
 
                 labels_sequence, labels_card = tuple_pattern
 
-                for label in labels_sequence:
+                for i, label in enumerate(labels_sequence):
                     if self.last_label is None:
                         self.last_label = label
                     else:
-                        self.add_labels_to_labels([self.last_label], [label])
+                        if len(self.optional_sequences_labels) > 0 and i == 0:
+                            self.add_labels_to_labels([self.last_label], [label], cardinality=cardinality(0,1))
+                        else:
+                            self.add_labels_to_labels([self.last_label], [label])
                         self.last_label = label
-                if not (labels_card[0] == "1" and labels_card[1] == "1"):
+                if not ((labels_card[0] == "1" and labels_card[1] == "1") or (labels_card[0] == "0" and labels_card[1] == "0")):
                     self.add_labels_to_labels([self.last_label], [labels_sequence[0]],
                                               src_to_dst_cardinality=cardinality(labels_card[0], labels_card[1]))
                 return labels_sequence[0]
@@ -304,6 +328,10 @@ class history_subset:
             else:
                 tuples_sequence, sequences_card = tuple_pattern
                 start_label = copy.copy(self.last_label)
+            
+                if sequences_card[0] == "0":
+                    self.optional_sequences_labels += [self.last_label]
+
                 for i, sub_tuple in enumerate(tuples_sequence):
                     sl = parse_into_graph(sub_tuple)
                     if i == 0:
@@ -711,18 +739,25 @@ class osh_manager():
 if __name__ == '__main__':
 
     hs = history_subset()
+
+    hs.add_pattern("[0,[1,2,3,4](0,1),5](1,1)")
+
+    # hs.add_pattern("[0,[1,2](0,3),4,10,[5,6](0,1),7,8,[9,10](1,2),11,12](1,1)")
+
+    hs.plot_graph(show=True)
+
     # hs.add_pattern("[obs1,[act2,obs2](1,2),act3](1,*)")
-    hs.add_pattern(
-        "[obs1,act1,[obs2,act2,[obs3,act3](2,2),[obs14,[act45,obs78](0,*),act15](14,12),[obs3,act3](2,2),obs4,act4](1,2)](1,*)")
+    # hs.add_pattern(
+    #     "[obs1,act1,[obs2,act2,[obs3,act3](2,2),[obs14,[act45,obs78](0,*),act15](14,12),[obs3,act3](2,2),obs4,act4](1,2)](1,*)")
     # hs.plot_graph(show=True)
 
-    hs = history_subset()
-    hs.add_actions_to_observations(["obs1"], ["act1"])
-    hs.add_actions_to_observations(["obs2"], ["act2"])
-    # hs.plot_graph(show=True)
+    # hs = history_subset()
+    # hs.add_actions_to_observations(["obs1"], ["act1"])
+    # hs.add_actions_to_observations(["obs2"], ["act2"])
+    # # hs.plot_graph(show=True)
 
-    hs = history_subset()
-    hs.add_history([("obs1", "act1"), ("obs2", "act2"), ("obs3", "act3")])
+    # hs = history_subset()
+    # hs.add_history([("obs1", "act1"), ("obs2", "act2"), ("obs3", "act3")])
     # hs.plot_graph(show=True)
 
     # oshr = osh_manager()
