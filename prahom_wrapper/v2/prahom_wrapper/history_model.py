@@ -1,23 +1,23 @@
 import sys
 sys.path
 sys.path.append('../../../.')
-
-import copy
-from dataclasses import dataclass, field
-import dataclasses
-from enum import Enum
-import itertools
-import json
-import random
-from typing import Any, Callable, Dict, List, Tuple, Union
-import networkx as nx
-import matplotlib.pyplot as plt
-from pprint import pprint
-import re
-import numpy as np
-from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
-from PIL import Image
 from prahom_wrapper.utils import draw_networkx_edge_labels
+from PIL import Image
+from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
+import numpy as np
+import re
+from pprint import pprint
+import matplotlib.pyplot as plt
+import networkx as nx
+from typing import Any, Callable, Dict, List, Tuple, Union
+import random
+import json
+import itertools
+from enum import Enum
+import dataclasses
+from dataclasses import dataclass, field
+import copy
+
 
 
 INFINITY = 'INFINITY'
@@ -70,7 +70,10 @@ class history_subset:
 
     history_graph: Dict[Union[observation_label, action_label],
                         Dict[Union[observation_label, action_label], Dict[int, cardinality]]]
+
     ordinal_counter: int
+
+    non_optional_start_end = (None, None)
 
     def __init__(self):
         self.history_graph = {}
@@ -234,7 +237,7 @@ class history_subset:
             # lonely labels in the begining of sequences
             regex = r'\[([\",0-9A-Za-z]{2,}?),\('
             matches = re.findall(regex, string_pattern)
-            
+
             for group in matches:
                 if group != "":
                     string_pattern = string_pattern.replace(
@@ -256,7 +259,7 @@ class history_subset:
             for group in matches:
                 if group != "":
                     string_pattern = string_pattern.replace(
-                        '),'+ group +'],(', '),'+ f"([{group}],('1','1'))" +'],(')
+                        '),' + group + '],(', '),' + f"([{group}],('1','1'))" + '],(')
 
             return string_pattern
 
@@ -293,7 +296,6 @@ class history_subset:
                 i += 1
 
         tuple_pattern = convert_to_tuple(history_pattern)
-        print(tuple_pattern)
 
         def is_only_labels(tuple_pattern: Tuple[List, cardinality]) -> bool:
             label_or_tuple_list, card = tuple_pattern
@@ -303,9 +305,10 @@ class history_subset:
             return True
 
         self.last_label = None
-        self.optional_sequences_labels = []
+        self.seq_start_label = None
+        self.seq_end_label = None
 
-        def parse_into_graph(tuple_pattern: Tuple[List, cardinality]) -> None:
+        def parse_into_graph(tuple_pattern: Tuple[List, cardinality], optional_way: bool = False) -> None:
 
             if is_only_labels(tuple_pattern):
 
@@ -315,32 +318,147 @@ class history_subset:
                     if self.last_label is None:
                         self.last_label = label
                     else:
-                        if len(self.optional_sequences_labels) > 0 and i == 0:
-                            self.add_labels_to_labels([self.last_label], [label], cardinality=cardinality(0,1))
+                        if optional_way and i == 0:
+                            self.add_labels_to_labels(
+                                [self.last_label], [label], src_to_dst_cardinality=cardinality(0, 1))
                         else:
-                            self.add_labels_to_labels([self.last_label], [label])
+                            self.add_labels_to_labels(
+                                [self.last_label], [label])
                         self.last_label = label
-                if not ((labels_card[0] == "1" and labels_card[1] == "1") or (labels_card[0] == "0" and labels_card[1] == "0")):
+                if not ((labels_card[0] == "1" and labels_card[1] == "1") or (labels_card[0] == "0" and labels_card[1] == "0") or (labels_card[0] == "0" and labels_card[1] == "1")):
                     self.add_labels_to_labels([self.last_label], [labels_sequence[0]],
                                               src_to_dst_cardinality=cardinality(labels_card[0], labels_card[1]))
-                return labels_sequence[0]
+                return labels_sequence[0], labels_sequence[-1]
 
             else:
                 tuples_sequence, sequences_card = tuple_pattern
                 start_label = copy.copy(self.last_label)
-            
-                if sequences_card[0] == "0":
-                    self.optional_sequences_labels += [self.last_label]
+
+                optional_way_start = []
+
+                seq_start_label = None
+                seq_end_label = None
 
                 for i, sub_tuple in enumerate(tuples_sequence):
-                    sl = parse_into_graph(sub_tuple)
+
+                    sub_tuple_card = sub_tuple[1]
+                    old_length = len(optional_way_start)
+                    if sub_tuple_card[0] == "0" and i > 0:
+                        if len(optional_way_start) == 0:
+                            optional_way_start += [(copy.copy(self.last_label), i)]
+                        elif len(optional_way_start) > 0 and optional_way_start[-1][1] > i - 1:
+                            optional_way_start += [(copy.copy(self.last_label), i)]
+                    sl, el = parse_into_graph(sub_tuple, optional_way=(
+                        len(optional_way_start) - old_length > 0) or optional_way)
+
+                    if len(optional_way_start) > 0 and optional_way_start[-1][0] is None:
+                        optional_way_start[-1] = copy.copy(
+                            (sl, optional_way_start[-1][1]))
+
                     if i == 0:
                         start_label = sl
-                if not (sequences_card[0] == "1" and sequences_card[1] == "1"):
+
+                    if not (sub_tuple_card[0] == "0") and seq_start_label is None:
+                        seq_start_label = copy.copy(sl)
+
+                    if not (sub_tuple_card[0] == "0"):
+                        seq_end_label = copy.copy(el)
+
+                    if len(optional_way_start) - old_length == 0:
+                        optional_way = False
+
+                    # and sub_tuple_card[0] != "0":
+                    if len(optional_way_start) > 0 and optional_way_start[0][1] != i:
+                        if sub_tuple_card[0] != "0":
+                            self.add_labels_to_labels(
+                                [optional_way_start.pop(0)[0]], [sl])
+
+                if not ((sequences_card[0] == "1" and sequences_card[1] == "1")) and not (sequences_card[0] == "0"):
                     self.add_labels_to_labels([self.last_label], [start_label],
                                               src_to_dst_cardinality=cardinality(sequences_card[0], sequences_card[1]))
 
-        parse_into_graph(tuple_pattern)
+                return seq_start_label, seq_end_label
+
+        self.non_optional_start_end = parse_into_graph(tuple_pattern)
+
+    def contains_history(self, history: history) -> bool:
+
+        no_start, no_end = self.non_optional_start_end
+        ordinal_num = 0
+
+        src_label = None
+        dst_label = None
+        curr_ord_num = None
+
+        crossed_labels = []
+
+        labels_it = 0
+        while labels_it < len(history):
+
+            src_label, dst_label = history[labels_it]
+
+            trans_ord_nums_cards = self.history_graph.get(
+                src_label, {}).get(dst_label, None)
+
+            if trans_ord_nums_cards is None:
+                return False
+
+            curr_ord_num = min(list(trans_ord_nums_cards.keys()))
+
+            if labels_it == 0:
+
+                # at first transition, it may starts at the non optional sequence, so first label is not the first label of the non optional sequence
+                if src_label != no_start:
+
+                    if curr_ord_num != 0:
+                        return False
+
+                    # loop on until reaching no_start
+                    while labels_it < len(history) or history[labels_it][0] == no_start:
+                        src_label, dst_label = history[labels_it]
+
+                        trans_ord_nums_cards = self.history_graph.get(
+                            src_label, {}).get(dst_label, None)
+                        
+                        if trans_ord_nums_cards is None:
+                            return False
+
+                        ordinal_num_card = [(on, c) for on, c in trans_ord_nums_cards.items() if on == curr_ord_num]
+
+                        if type(curr_ord_num) is tuple and len(ordinal_num_card) == 0:
+                            sorted_ord_nums = [(on,c) for on,c in trans_ord_nums_cards.items()]
+                            sorted_ord_nums.sort(key=lambda x: x[0])
+                            for on, c in sorted_ord_nums:
+
+
+                            already_crossed = [transition for transition in crossed_labels if transition == curr_ord_num[0][1]]
+                            card = curr_ord_num[1]
+                            if len(already_crossed) > card[1]:
+                                return False
+                            curr_ord_num = 
+
+                        if len(ordinal_num_card) == 0:
+                            return False
+
+                        c_ord_num, card = ordinal_num_card[0]
+
+                        if card.upper_bound == "*" or card.upper_bound > 1:
+                            curr_ord_num = ((curr_ord_num, (src_label, dst_label)), (card.lower_bound,card.upper_bound))
+                        else:
+                            curr_ord_num += 1
+
+                        crossed_labels = [(src_label, dst_label)]
+                        labels_it += 1
+
+            # then, it starts in a optional sequence, in this case it must starts at the 0 ordinal number transition
+            # proceed until no_end
+
+            ordinal_num += 1
+            labels_it += 1
+
+            # check minimal cardinality has been reached
+            # TODO
+
 
     def plot_graph(self, show: bool = False, render_rgba: bool = False, save: bool = False):
 
@@ -455,7 +573,8 @@ class os_to_history_subset_relations:
                         os_agent_label, {})
                     ordinal_number_to_cardinality = copy.deepcopy(
                         history_subset.history_graph[src_label][dst_label])
-                    self.history_graph[src_label][dst_label][os_agent_label].update(ordinal_number_to_cardinality)
+                    self.history_graph[src_label][dst_label][os_agent_label].update(
+                        ordinal_number_to_cardinality)
 
     def get_os_from_joint_history(self, joint_history: joint_history) -> Dict[str, List[os_label]]:
         """Get the organizational specifications from a joint-history.
@@ -490,27 +609,31 @@ class os_to_history_subset_relations:
         joint_matching_os_labels: Dict[str, List[os_label]] = {}
         for agent, history in joint_history.items():
             auxiliary_history_graph: Dict[Union[observation_label, action_label],
-                        Dict[Union[observation_label, action_label], Dict[os_label, Dict[int, cardinality]]]] = {}
+                                          Dict[Union[observation_label, action_label], Dict[os_label, Dict[int, cardinality]]]] = {}
             ordinal_number = 0
             os_labels = []
             for label_transition in history:
                 src_label, dst_label = label_transition
-                
-                os_transition_labels = list(self.history_graph.get(src_label, {}).get(dst_label, {}).keys())
+
+                os_transition_labels = list(self.history_graph.get(
+                    src_label, {}).get(dst_label, {}).keys())
 
                 for osl in os_label:
 
-                    ordinal_numbers = list(self.history_graph[src_label][dst_label][osl].keys())
+                    ordinal_numbers = list(
+                        self.history_graph[src_label][dst_label][osl].keys())
 
                     if ordinal_number in ordinal_numbers:
 
                         card = self.history_graph[src_label][dst_label][osl][ordinal_number]
-                        if not(card.lower_bound == 1 and card.upper_bound == 1):
+                        if not (card.lower_bound == 1 and card.upper_bound == 1):
                             auxiliary_history_graph.setdefault(src_label, {})
-                            auxiliary_history_graph[src_label].setdefault(dst_label, {})
-                            auxiliary_history_graph[src_label].setdefault(dst_label, {})
+                            auxiliary_history_graph[src_label].setdefault(
+                                dst_label, {})
+                            auxiliary_history_graph[src_label].setdefault(
+                                dst_label, {})
                             ordinal_number = None
-                        
+
                     ordinal_number += 1
 
             joint_matching_os_labels[agent] = list(matching_os_labels)
@@ -561,7 +684,7 @@ class os_to_history_subset_relations:
 
         return list(agents_hs.values())
 
-    def get_next_actions_from_observation_and_os(self, joint_history: joint_history, \
+    def get_next_actions_from_observation_and_os(self, joint_history: joint_history,
                                                  observation_label: observation_label, os_label: os_label) -> List[action_label]:
         """According to organizational specifications, get the next actions that should be played when a joint-history has already been played and an observation is received.
 
@@ -572,7 +695,7 @@ class os_to_history_subset_relations:
 
         observation_label : observation_label
             The received observation label
-        
+
         os_label : os_label
             The given organizational specification label
 
@@ -740,7 +863,19 @@ if __name__ == '__main__':
 
     hs = history_subset()
 
-    hs.add_pattern("[0,[1,2,3,4](0,1),5](1,1)")
+    hs.add_pattern("[[0,[1,2,3](0,8)](1,3)](1,1)")
+
+    # hs.add_pattern("[[0,1,2](0,1),3,4,[5,6,7](0,1)](1,1)")
+
+    # hs.add_pattern("[0,[1,[7,8](0,1),2](0,2),3,4](1,1)")
+
+    # hs.add_pattern("[[[1,2](1,2),3](0,4)](1,1)")
+
+    # h = [(1,2),(3,4)]
+    # contained = hs.contains_history(h)
+    # print(contained)
+
+    # hs.add_pattern("[0,[1,[9,8](0,1),2](0,4),[4,5](0,2),6](1,1)")
 
     # hs.add_pattern("[0,[1,2](0,3),4,10,[5,6](0,1),7,8,[9,10](1,2),11,12](1,1)")
 
