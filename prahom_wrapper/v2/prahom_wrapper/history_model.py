@@ -1,23 +1,23 @@
 import sys
 sys.path
 sys.path.append('../../../.')
-from prahom_wrapper.utils import draw_networkx_edge_labels
-from PIL import Image
-from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
-import numpy as np
-import re
-from pprint import pprint
-import matplotlib.pyplot as plt
-import networkx as nx
-from typing import Any, Callable, Dict, List, Tuple, Union
-import random
-import json
-import itertools
-from enum import Enum
-import dataclasses
-from dataclasses import dataclass, field
-import copy
 
+import copy
+from dataclasses import dataclass, field
+import dataclasses
+from enum import Enum
+import itertools
+import json
+import random
+from typing import Any, Callable, Dict, List, Tuple, Union
+import networkx as nx
+import matplotlib.pyplot as plt
+from pprint import pprint
+import re
+import numpy as np
+from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
+from PIL import Image
+from prahom_wrapper.utils import draw_networkx_edge_labels
 
 
 INFINITY = 'INFINITY'
@@ -308,7 +308,7 @@ class history_subset:
         self.seq_start_label = None
         self.seq_end_label = None
 
-        def parse_into_graph(tuple_pattern: Tuple[List, cardinality], optional_way: bool = False) -> None:
+        def parse_into_graph(tuple_pattern: Tuple[List, cardinality], optional_way: bool = False) -> Tuple[str, str]:
 
             if is_only_labels(tuple_pattern):
 
@@ -381,84 +381,113 @@ class history_subset:
 
         self.non_optional_start_end = parse_into_graph(tuple_pattern)
 
-    def contains_history(self, history: history) -> bool:
+    # def contains_history(self, history: history) -> bool:
 
-        no_start, no_end = self.non_optional_start_end
-        ordinal_num = 0
+    #     no_start, no_end = self.non_optional_start_end
+    #     ordinal_num = 0
 
-        src_label = None
-        dst_label = None
-        curr_ord_num = None
+    #     src_label = None
+    #     dst_label = None
+    #     curr_ord_num = None
 
-        crossed_labels = []
+    #     crossed_labels = []
 
-        labels_it = 0
-        while labels_it < len(history):
+    #     labels_it = 0
+    #     while labels_it < len(history):
 
-            src_label, dst_label = history[labels_it]
+    #         src_label, dst_label = history[labels_it]
 
-            trans_ord_nums_cards = self.history_graph.get(
-                src_label, {}).get(dst_label, None)
+    #         trans_ord_nums_cards = self.history_graph.get(
+    #             src_label, {}).get(dst_label, None)
 
-            if trans_ord_nums_cards is None:
-                return False
+    #         if trans_ord_nums_cards is None:
+    #             return False
 
-            curr_ord_num = min(list(trans_ord_nums_cards.keys()))
+    #         curr_ord_num = min(list(trans_ord_nums_cards.keys()))
 
-            if labels_it == 0:
+    #         if labels_it == 0:
 
-                # at first transition, it may starts at the non optional sequence, so first label is not the first label of the non optional sequence
-                if src_label != no_start:
+    #             # at first transition, it may starts at the non optional sequence, so first label is not the first label of the non optional sequence
+    #             if src_label != no_start:
 
-                    if curr_ord_num != 0:
-                        return False
+    #                 if curr_ord_num != 0:
+    #                     return False
 
-                    # loop on until reaching no_start
-                    while labels_it < len(history) or history[labels_it][0] == no_start:
-                        src_label, dst_label = history[labels_it]
+    #                 # loop on until reaching no_start
+    #                 while labels_it < len(history) or history[labels_it][0] == no_start:
+    #                     src_label, dst_label = history[labels_it]
 
-                        trans_ord_nums_cards = self.history_graph.get(
-                            src_label, {}).get(dst_label, None)
-                        
-                        if trans_ord_nums_cards is None:
-                            return False
+    #                     trans_ord_nums_cards = self.history_graph.get(
+    #                         src_label, {}).get(dst_label, None)
 
-                        ordinal_num_card = [(on, c) for on, c in trans_ord_nums_cards.items() if on == curr_ord_num]
+    #                     if trans_ord_nums_cards is None:
+    #                         return False
 
-                        if type(curr_ord_num) is tuple and len(ordinal_num_card) == 0:
-                            sorted_ord_nums = [(on,c) for on,c in trans_ord_nums_cards.items()]
-                            sorted_ord_nums.sort(key=lambda x: x[0])
-                            for on, c in sorted_ord_nums:
+    #                     ordinal_num_card = [(on, c) for on, c in trans_ord_nums_cards.items() if on == curr_ord_num]
 
+    #                     if type(curr_ord_num) is tuple and len(ordinal_num_card) == 0:
+    #                         sorted_ord_nums = [(on,c) for on,c in trans_ord_nums_cards.items()]
+    #                         sorted_ord_nums.sort(key=lambda x: x[0])
+    #                         for on, c in sorted_ord_nums:
 
-                            already_crossed = [transition for transition in crossed_labels if transition == curr_ord_num[0][1]]
-                            card = curr_ord_num[1]
-                            if len(already_crossed) > card[1]:
-                                return False
-                            curr_ord_num = 
+    #                         already_crossed = [transition for transition in crossed_labels if transition == curr_ord_num[0][1]]
+    #                         card = curr_ord_num[1]
+    #                         if len(already_crossed) > card[1]:
+    #                             return False
+    #                         curr_ord_num =
 
-                        if len(ordinal_num_card) == 0:
-                            return False
+    #                     if len(ordinal_num_card) == 0:
+    #                         return False
 
-                        c_ord_num, card = ordinal_num_card[0]
+    #                     c_ord_num, card = ordinal_num_card[0]
 
-                        if card.upper_bound == "*" or card.upper_bound > 1:
-                            curr_ord_num = ((curr_ord_num, (src_label, dst_label)), (card.lower_bound,card.upper_bound))
-                        else:
-                            curr_ord_num += 1
+    #                     if card.upper_bound == "*" or card.upper_bound > 1:
+    #                         curr_ord_num = ((curr_ord_num, (src_label, dst_label)), (card.lower_bound,card.upper_bound))
+    #                     else:
+    #                         curr_ord_num += 1
 
-                        crossed_labels = [(src_label, dst_label)]
-                        labels_it += 1
+    #                     crossed_labels = [(src_label, dst_label)]
+    #                     labels_it += 1
 
-            # then, it starts in a optional sequence, in this case it must starts at the 0 ordinal number transition
-            # proceed until no_end
+    #         # then, it starts in a optional sequence, in this case it must starts at the 0 ordinal number transition
+    #         # proceed until no_end
 
-            ordinal_num += 1
-            labels_it += 1
+    #         ordinal_num += 1
+    #         labels_it += 1
 
-            # check minimal cardinality has been reached
-            # TODO
+    #         # check minimal cardinality has been reached
+    #         # TODO
 
+    def sample(self, seed: int = 42) -> history:
+
+        MAX_ITERATION = 20
+        random.seed(seed)
+        order_index = 0
+        label_index = 0
+        if random.random() > 0.5:
+            order_index = 10000
+            obs = self.non_optional_start_end[0]
+            for act in self.history_graph[obs]:
+                for order_i in list(self.history_graph[obs][act].keys()):
+                    if order_i < order_index:
+                        order_index = order_i
+
+        obs = [label1 for label1 in self.history_graph if len([label2 for label2 in self.history_graph[label1] if (
+        order_index in (self.history_graph[label1][label2].keys()))]) == 1][0]
+        
+        act = [label2 for label2 in self.history_graph[obs] if (order_index in (self.history_graph[obs][label2].keys()))][0]
+
+        tmp_graph: Any = {}
+
+        while(label_index < MAX_ITERATION):
+
+            if(self.history_graph.get(act, None) is not None):
+                # select a random observation among the existing ones
+                pass
+
+            act_ord = self.history_graph[obs]
+
+            ord_sorted = [for act, ord_card in act_ord.items()]
 
     def plot_graph(self, show: bool = False, render_rgba: bool = False, save: bool = False):
 
@@ -863,7 +892,9 @@ if __name__ == '__main__':
 
     hs = history_subset()
 
-    hs.add_pattern("[[0,[1,2,3](0,8)](1,3)](1,1)")
+    hs.add_pattern("[[0,1](0,1),2,3](1,1)")
+
+    hs.sample()
 
     # hs.add_pattern("[[0,1,2](0,1),3,4,[5,6,7](0,1)](1,1)")
 
@@ -879,7 +910,7 @@ if __name__ == '__main__':
 
     # hs.add_pattern("[0,[1,2](0,3),4,10,[5,6](0,1),7,8,[9,10](1,2),11,12](1,1)")
 
-    hs.plot_graph(show=True)
+    # hs.plot_graph(show=True)
 
     # hs.add_pattern("[obs1,[act2,obs2](1,2),act3](1,*)")
     # hs.add_pattern(
