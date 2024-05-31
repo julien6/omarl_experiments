@@ -9,7 +9,7 @@ from enum import Enum
 import itertools
 import json
 import random
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, OrderedDict, Tuple, Union
 import networkx as nx
 import matplotlib.pyplot as plt
 from pprint import pprint
@@ -381,89 +381,37 @@ class history_subset:
 
         self.non_optional_start_end = parse_into_graph(tuple_pattern)
 
-    # def contains_history(self, history: history) -> bool:
-
-    #     no_start, no_end = self.non_optional_start_end
-    #     ordinal_num = 0
-
-    #     src_label = None
-    #     dst_label = None
-    #     curr_ord_num = None
-
-    #     crossed_labels = []
-
-    #     labels_it = 0
-    #     while labels_it < len(history):
-
-    #         src_label, dst_label = history[labels_it]
-
-    #         trans_ord_nums_cards = self.history_graph.get(
-    #             src_label, {}).get(dst_label, None)
-
-    #         if trans_ord_nums_cards is None:
-    #             return False
-
-    #         curr_ord_num = min(list(trans_ord_nums_cards.keys()))
-
-    #         if labels_it == 0:
-
-    #             # at first transition, it may starts at the non optional sequence, so first label is not the first label of the non optional sequence
-    #             if src_label != no_start:
-
-    #                 if curr_ord_num != 0:
-    #                     return False
-
-    #                 # loop on until reaching no_start
-    #                 while labels_it < len(history) or history[labels_it][0] == no_start:
-    #                     src_label, dst_label = history[labels_it]
-
-    #                     trans_ord_nums_cards = self.history_graph.get(
-    #                         src_label, {}).get(dst_label, None)
-
-    #                     if trans_ord_nums_cards is None:
-    #                         return False
-
-    #                     ordinal_num_card = [(on, c) for on, c in trans_ord_nums_cards.items() if on == curr_ord_num]
-
-    #                     if type(curr_ord_num) is tuple and len(ordinal_num_card) == 0:
-    #                         sorted_ord_nums = [(on,c) for on,c in trans_ord_nums_cards.items()]
-    #                         sorted_ord_nums.sort(key=lambda x: x[0])
-    #                         for on, c in sorted_ord_nums:
-
-    #                         already_crossed = [transition for transition in crossed_labels if transition == curr_ord_num[0][1]]
-    #                         card = curr_ord_num[1]
-    #                         if len(already_crossed) > card[1]:
-    #                             return False
-    #                         curr_ord_num =
-
-    #                     if len(ordinal_num_card) == 0:
-    #                         return False
-
-    #                     c_ord_num, card = ordinal_num_card[0]
-
-    #                     if card.upper_bound == "*" or card.upper_bound > 1:
-    #                         curr_ord_num = ((curr_ord_num, (src_label, dst_label)), (card.lower_bound,card.upper_bound))
-    #                     else:
-    #                         curr_ord_num += 1
-
-    #                     crossed_labels = [(src_label, dst_label)]
-    #                     labels_it += 1
-
-    #         # then, it starts in a optional sequence, in this case it must starts at the 0 ordinal number transition
-    #         # proceed until no_end
-
-    #         ordinal_num += 1
-    #         labels_it += 1
-
-    #         # check minimal cardinality has been reached
-    #         # TODO
 
     def sample(self, seed: int = 42) -> history:
 
         MAX_ITERATION = 10
-        random.seed(seed)
+        hist: history = []
         order_index = 0
         label_index = 0
+        
+        hist_graph: Dict[Union[observation_label, action_label],
+                        Dict[Union[observation_label, action_label], Dict[int, cardinality]]] = copy.deepcopy(self.history_graph)
+
+        def find_transition(label: str) -> str:
+            """Gives the next label from given one"""
+            
+            label2_order_card = [[(label2, ord) for ord in ord_cards] for label2, ord_cards in hist_graph[label].items()]
+            label2_order_card = list(itertools.chain.from_iterable(label2_order_card))
+            label2_order_card.sort(key=lambda x: x[1])
+
+            for label2, order_num in label2_order_card:
+                card = hist_graph[label][label2][order_num]
+                if card.lower_bound == 0 and card.upper_bound == 0:
+                    pass
+                if card.upper_bound > 0:
+                    if card.upper_bound > 1:
+                        if random.randint(card.lower_bound, card.upper_bound) == 0:
+                            continue
+                        hist_graph[label][label2][order_num].lower_bound = card.lower_bound - 1 if card.lower_bound - 1 >= 0 else 0
+                        hist_graph[label][label2][order_num].upper_bound = card.upper_bound - 1 if card.upper_bound - 1 >= 0 else 0                        
+                        return label2, order_num
+
+        random.seed(seed)
         if random.random() > 0.5:
             order_index = 10000
             obs = self.non_optional_start_end[0]
@@ -477,16 +425,48 @@ class history_subset:
         
         act = [label2 for label2 in self.history_graph[obs] if (order_index in (self.history_graph[obs][label2].keys()))][0]
 
-        hist: history = []
+        hist += [(obs,act)]
 
-        while(label_index < MAX_ITERATION):
+        order_index += 1
 
-            if(self.history_graph.get(act, None) is not None):
-                # select a random observation among the existing ones
-                obs = random.choice(list(self.history_graph.keys()))
-            else:
-                obs = self.history_graph[act]
-            act = [(a, self.history_graph[obs][a][order_index]) for a in self.history_graph[obs] if order_index in list(self.history_graph[obs][a].keys())][0]
+        if(self.history_graph.get(act, None) is None):
+            # select a random observation among the existing ones
+            obs = random.choice(list(self.history_graph.keys()))
+        else:
+            # follow the pattern to get next observation
+            obs_order_card = [[(o, (ord, card)) for ord, card in ord_cards.items()] for o, ord_cards in self.history_graph[act].items()]
+            obs_order_card = list(itertools.chain.from_iterable(obs_order_card))
+            obs_order_card.sort(key=lambda x: x[1][0])
+            obs_order_card = [(x[0], x[1][1]) for x in obs_order_card]
+
+            crossed_transitions = {}
+            for o, card in obs_order_card:
+
+                crossed_transitions.setdefault((act,o), (card.lower_bound, card.upper_bound))
+
+                crossed_trans = [x for x in hist if x == (act, o)]
+
+                if crossed_trans < card:
+                    obs = o
+                    break
+
+
+            print(obs_order_card)
+            print(obs, act)
+
+        # while(label_index < MAX_ITERATION):
+
+        #     if(self.history_graph.get(act, None) is not None):
+        #         # select a random observation among the existing ones
+        #         obs = random.choice(list(self.history_graph.keys()))
+        #     else:
+
+        #         # follow the pattern
+        #         obs_order_card = [[(obs, ord) for ord, card in ord_cards.items()] for obs, ord_cards in self.history_graph[act].items()]
+        #         obs_order_card = list(itertools.chain.from_iterable(obs_order_card))
+        #         obs_order_card.sort(key=lambda x: x[1])
+
+        #     act = [(a, self.history_graph[obs][a][order_index]) for a in self.history_graph[obs] if order_index in list(self.history_graph[obs][a].keys())][0]
 
     def plot_graph(self, show: bool = False, render_rgba: bool = False, save: bool = False):
 
@@ -891,8 +871,8 @@ if __name__ == '__main__':
 
     hs = history_subset()
 
-    hs.add_pattern("[[0,1](0,1),2,3](1,1)")
-
+    # hs.add_pattern("[[0,1](0,1),2,3,[4,5](1,3),6](1,1)")
+    hs.add_pattern("[[0,1](2,2),2](3,3)")
     hs.sample()
 
     # hs.add_pattern("[[0,1,2](0,1),3,4,[5,6,7](0,1)](1,1)")
