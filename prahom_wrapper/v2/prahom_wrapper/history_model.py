@@ -460,7 +460,7 @@ class history_subset:
 
     def sample(self, seed: int = 42) -> history:
 
-        MAX_ITERATION = 20
+        MAX_ITERATION = 10
         random.seed(seed)
         order_index = 0
         label_index = 0
@@ -477,17 +477,16 @@ class history_subset:
         
         act = [label2 for label2 in self.history_graph[obs] if (order_index in (self.history_graph[obs][label2].keys()))][0]
 
-        tmp_graph: Any = {}
+        hist: history = []
 
         while(label_index < MAX_ITERATION):
 
             if(self.history_graph.get(act, None) is not None):
                 # select a random observation among the existing ones
-                pass
-
-            act_ord = self.history_graph[obs]
-
-            ord_sorted = [for act, ord_card in act_ord.items()]
+                obs = random.choice(list(self.history_graph.keys()))
+            else:
+                obs = self.history_graph[act]
+            act = [(a, self.history_graph[obs][a][order_index]) for a in self.history_graph[obs] if order_index in list(self.history_graph[obs][a].keys())][0]
 
     def plot_graph(self, show: bool = False, render_rgba: bool = False, save: bool = False):
 
