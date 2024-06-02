@@ -182,6 +182,20 @@ class history_subset:
                 self.history_graph[src_label][dst_label][self.ordinal_counter] = src_to_dst_cardinality
         self.ordinal_counter += 1
 
+    def get_fathers(self, label: Union[observation_label, action_label]) -> List[Union[observation_label, action_label]]:
+        """Get the fathers of given label
+        """
+        father_labels = []
+        for label1 in self.history_graph:
+            if label in list(self.history_graph.get(label1).keys()):
+                father_labels += [label1]
+        return father_labels
+
+    def get_sons(self, label: Union[observation_label, action_label]) -> List[Union[observation_label, action_label]]:
+        """Get the sons of given label
+        """
+        return list(self.history_graph.get(label).keys())
+
     def add_history(self, history: history):
         """Add the given history in the history subset.
 
@@ -388,7 +402,7 @@ class history_subset:
         hist: history = []
         order_index = 0
         label_index = 0
-        
+
         hist_graph: Dict[Union[observation_label, action_label],
                         Dict[Union[observation_label, action_label], Dict[int, cardinality]]] = copy.deepcopy(self.history_graph)
 
@@ -399,17 +413,42 @@ class history_subset:
             label2_order_card = list(itertools.chain.from_iterable(label2_order_card))
             label2_order_card.sort(key=lambda x: x[1])
 
+            father_labels = self.get_fathers(label)
+            if len(father_labels) >= 2:
+                for father_label in self.get_fathers(label):
+                    for ord_n in list(hist_graph[father_label][label].keys()):
+                        if hist_graph[father_label][label][ord_n].lower_bound == 0 and \
+                        hist_graph[father_label][label][ord_n].upper_bound == 0:
+                            hist_graph[father_label][label][ord_n].lower_bound = copy.copy(self.history_graph[father_label][label][ord_n].lower_bound)
+                            hist_graph[father_label][label][ord_n].upper_bound = copy.copy(self.history_graph[father_label][label][ord_n].upper_bound)
+
             for label2, order_num in label2_order_card:
+                
                 card = hist_graph[label][label2][order_num]
+
                 if card.lower_bound == 0 and card.upper_bound == 0:
-                    pass
-                if card.upper_bound > 0:
-                    if card.upper_bound > 1:
-                        if random.randint(card.lower_bound, card.upper_bound) == 0:
-                            continue
-                        hist_graph[label][label2][order_num].lower_bound = card.lower_bound - 1 if card.lower_bound - 1 >= 0 else 0
-                        hist_graph[label][label2][order_num].upper_bound = card.upper_bound - 1 if card.upper_bound - 1 >= 0 else 0                        
-                        return label2, order_num
+                        continue
+
+                if card.upper_bound == "*":
+                    hist_graph[label][label2][order_num].upper_bound = random.randint(card.lower_bound, card.lower_bound * 5)
+
+                if int(card.upper_bound) > 0 and int(card.upper_bound) > int(card.lower_bound):
+                    fixed_card = random.randint(card.lower_bound, card.upper_bound)
+                    hist_graph[label][label2][order_num].lower_bound = fixed_card
+                    hist_graph[label][label2][order_num].upper_bound = fixed_card
+
+                elif int(card.upper_bound) > 1:
+                                        
+                    hist_graph[label][label2][order_num] = cardinality(int(card.lower_bound) - 2 if int(card.lower_bound) - 2 >= 0 else 0,
+                                                                       int(card.upper_bound) - 2 if int(card.upper_bound) - 2 >= 0 else 0)
+
+                    if hist_graph[label][label2][order_num].lower_bound == 1 and hist_graph[label][label2][order_num].upper_bound == 1:
+                        hist_graph[label][label2][order_num].lower_bound = 2
+                        hist_graph[label][label2][order_num].upper_bound = 2
+                
+                return label2
+                    
+            return None
 
         random.seed(seed)
         if random.random() > 0.5:
@@ -434,25 +473,11 @@ class history_subset:
             obs = random.choice(list(self.history_graph.keys()))
         else:
             # follow the pattern to get next observation
-            obs_order_card = [[(o, (ord, card)) for ord, card in ord_cards.items()] for o, ord_cards in self.history_graph[act].items()]
-            obs_order_card = list(itertools.chain.from_iterable(obs_order_card))
-            obs_order_card.sort(key=lambda x: x[1][0])
-            obs_order_card = [(x[0], x[1][1]) for x in obs_order_card]
+            l1 = obs
 
-            crossed_transitions = {}
-            for o, card in obs_order_card:
-
-                crossed_transitions.setdefault((act,o), (card.lower_bound, card.upper_bound))
-
-                crossed_trans = [x for x in hist if x == (act, o)]
-
-                if crossed_trans < card:
-                    obs = o
-                    break
-
-
-            print(obs_order_card)
-            print(obs, act)
+            for i in range(0,10):
+                print(l1)
+                l1 = find_transition(l1)
 
         # while(label_index < MAX_ITERATION):
 
@@ -872,7 +897,9 @@ if __name__ == '__main__':
     hs = history_subset()
 
     # hs.add_pattern("[[0,1](0,1),2,3,[4,5](1,3),6](1,1)")
-    hs.add_pattern("[[0,1](2,2),2](3,3)")
+    # hs.add_pattern("[[0,1](2,2),2](3,3)")
+    hs.add_pattern("[0,1,2](3,3)")
+    # hs.plot_graph(show=True)
     hs.sample()
 
     # hs.add_pattern("[[0,1,2](0,1),3,4,[5,6,7](0,1)](1,1)")
