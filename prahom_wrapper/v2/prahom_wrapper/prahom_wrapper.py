@@ -239,7 +239,7 @@ if __name__ == '__main__':
         os_constraints = (organizational_model(structural_specifications=structural_specifications(roles={"role_0": history_subset()}),
                                                          functional_specifications=functional_specifications(social_scheme=social_scheme(goals={"goal_0": history_subset()})),
                                                          deontic_specifications=None)),
-        os_integration_mode = ConstraintsRespectMode.CORRECT,
-        algorithm_configuration = algorithm_libraries.SB3().set_algorithm_PPO(configuration)
+        os_constraints_integration_mode = ConstraintsRespectMode.CORRECT,
+        algorithm_configuration = libraries.SB3().PPO_conf()
     )
     env.generate_organizational_specifications(use_gosia = True)
