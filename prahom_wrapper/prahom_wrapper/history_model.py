@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from pprint import pprint
 import re
 import numpy as np
-from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
+from prahom_wrapper.prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
 from PIL import Image
 from prahom_wrapper.utils import draw_networkx_edge_labels
 

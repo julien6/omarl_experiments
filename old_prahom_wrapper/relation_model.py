@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from pprint import pprint
 
 import numpy as np
-from prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
+from prahom_wrapper.prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
 from PIL import Image
 from prahom_wrapper.pattern_utils import eval_str_history_pattern, parse_str_history_pattern, history_pattern
 from prahom_wrapper.history_model import histories, joint_histories

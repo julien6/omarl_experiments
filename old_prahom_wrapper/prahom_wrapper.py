@@ -11,7 +11,7 @@ from pettingzoo.utils.wrappers import BaseWrapper
 from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType
 
 from custom_envs.movingcompany import moving_company_v0
-from prahom_wrapper.organizational_model import cardinality, deontic_specifications, functional_specifications, group_specifications, link, link_type, obligation, organizational_model, permission, plan, plan_operator, social_preference, social_scheme, structural_specifications, time_constraint_type
+from prahom_wrapper.prahom_wrapper.organizational_model import cardinality, deontic_specifications, functional_specifications, group_specifications, link, link_type, obligation, organizational_model, permission, plan, plan_operator, social_preference, social_scheme, structural_specifications, time_constraint_type
 from prahom_wrapper.policy_model import joint_policy_constraint
 from prahom_wrapper.relation_model import osj_relation
 from prahom_wrapper.role_clustering import generate_r_clustering

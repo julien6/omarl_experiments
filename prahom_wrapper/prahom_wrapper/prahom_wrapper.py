@@ -1,20 +1,17 @@
-import sys
-
-from prahom_wrapper.prahom_wrapper import ConstraintsRespectMode
-from prahom_wrapper.v2.prahom_wrapper.history_model import history_subset
-sys.path
-sys.path.append('../../../.')
-
-from dataclasses import dataclass
-from enum import Enum
 import numpy as np
 import gymnasium
 
-from typing import Any, Callable, Dict, List, Set, Tuple
+from custom_envs.movingcompany.moving_company_v0 import env, raw_env, parallel_env
+from prahom_wrapper.utils import constraints_integration_mode
+from typing import Any, Callable, Dict, List, Set, Tuple, Union
 from pettingzoo.utils.wrappers import BaseWrapper
-from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType
-
-from prahom_wrapper.organizational_model import cardinality, deontic_specifications, functional_specifications, group_specifications, link, link_type, obligation, organizational_model, permission, plan, plan_operator, social_preference, social_scheme, structural_specifications, time_constraint_type
+from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType, ParallelEnv
+from prahom_wrapper.prahom_wrapper.organizational_model import cardinality, deontic_specifications, \
+    functional_specifications, group_specifications, link, link_type, obligation, \
+    organizational_model, permission, plan, plan_operator, social_preference, social_scheme, \
+    structural_specifications, time_constraint_type
+from osh_model import osh_model
+from algorithm_configuration import algorithm_configuration, prahom_alg_mngr
 
 
 class prahom_wrapper(BaseWrapper):
@@ -75,25 +72,26 @@ class prahom_wrapper(BaseWrapper):
     ###########################################
     # The PRAHOM additional features:
     ###########################################
-    
+
     def set_organizational_analyze_mode(self):
         self.set_organizational_analyze_mode = True
-    
-    def train_under_constraints(self, env_creator: Callable, osh_model: osh_model,
-                                constraint_integration_mode: ConstraintsRespectMode = ConstraintsRespectMode.CORRECT,
-                                algorithm_configuration: algorithm_configuration = ALG_MNGR.SB3.default_PPO()) -> None:
+
+    def train_under_constraints(self, env_creator: Callable[..., Union[AECEnv, ParallelEnv]], osh_model: osh_model,
+                                constraint_integration_mode: constraints_integration_mode = constraints_integration_mode.CORRECT,
+                                algorithm_configuration: algorithm_configuration = prahom_alg_mngr.SB3.default_PPO()) -> None:
         """Restrict history subset to those where any of the given actions is followed by any of the given observations.
 
         Parameters
         ----------
-        env_creator : List[Union[action_label,observation_label]]
-            The given source labels
+        env_creator : [..., Union[AECEnv, ParallelEnv]
+            The function that enables creating pettingzoo environment either AEC or Parallel
 
-        constraint_integration_mode : List[Union[action_label,observation_label]]
-            The given destination labels 
+        constraint_integration_mode : constraint_integration_mode
+            The constraint integration mode: CORRECT, PENALIZE, CORRECT_AT_POLICY
 
         algorithm_configuration : algorithm_configuration
-            The given destination labels 
+            The configuration of a predefined MARL algorithm (PPO, MADDPG) to be used with a library (StableBaseLines3, RLlib)
+            that can be manually fine-tuned or automatically with Hyper-parameter Optimizer (Optuna)
 
         Returns
         -------
@@ -101,8 +99,7 @@ class prahom_wrapper(BaseWrapper):
 
         Examples
         --------
-        >>> hs = history_subset()
-        >>> hs.add_labels_to_labels(["act1","act2"], ["obs1","obs2"])
+        >>> 
 
         See Also
         --------
@@ -110,7 +107,7 @@ class prahom_wrapper(BaseWrapper):
         """
         pass
 
-    def generate_specs(self) -> organizational_model:
+    def generate_organizational_specifications(self, use_kosia = True, use_gosia = True) -> organizational_model:
         """Play all the joint-policies to get joint-histories to apply KOSIA/GOSIA from these
         """
 
@@ -161,31 +158,19 @@ class prahom_wrapper(BaseWrapper):
 
         return os_gosia
 
-    def kosia(self, joint_hists: List[joint_history]) -> organizational_model:
-        """The Knowledge-based Organizational Specification Identification Approach
-        """
-        pass
-
-    def gosia(self, os: organizational_model, joint_hists: List[joint_history]) -> organizational_model:
-        """The general Organizational Specification Inference Approach
-        """
-        pass
-
-    def fusion_organizational_model(self, os_src: organizational_model, os_dest: organizational_model) -> organizational_model:
-        """A function to set the organizational specs. from a os model into another (richer) one
-        """
-        pass
 
 if __name__ == '__main__':
 
-    env = pz_environment_vx()
-    env = prahom_wrapper(env)
-    env.reset(prahom_policy_model = True)
-    env.train_under_constraints(
-        os_constraints = (organizational_model(structural_specifications=structural_specifications(roles={"role_0": history_subset()}),
-                                                         functional_specifications=functional_specifications(social_scheme=social_scheme(goals={"goal_0": history_subset()})),
-                                                         deontic_specifications=None)),
-        os_integration_mode = ConstraintsRespectMode.CORRECT,
-        algorithm_configuration = algorithm_libraries.SB3().set_algorithm_PPO(configuration)
+    pz_env = raw_env()
+    pz_env = prahom_wrapper(env)
+    pz_env.reset(prahom_policy_model=True)
+    pz_env.train_under_constraints(env_creator=env,
+        osh_model=(organizational_model(structural_specifications=structural_specifications(roles={"role_0": history_subset()}),
+                                             functional_specifications=functional_specifications(
+                                                 social_scheme=social_scheme(goals={"goal_0": history_subset()})),
+                                             deontic_specifications=None)),
+        constraint_integration_mode=constraints_integration_mode.CORRECT,
+        algorithm_configuration=prahom_alg_mngr.SB3.default_PPO()
     )
-    env.generate_organizational_specifications(use_gosia = True)
+    om = pz_env.generate_organizational_specifications(use_gosia=True,use_kosia=False)
+    print(om)
