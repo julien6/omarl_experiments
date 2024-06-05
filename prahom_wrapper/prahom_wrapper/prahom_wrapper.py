@@ -2,16 +2,17 @@ import numpy as np
 import gymnasium
 
 from custom_envs.movingcompany.moving_company_v0 import env, raw_env, parallel_env
+from prahom_wrapper.prahom_wrapper import osh_model
+from prahom_wrapper.prahom_wrapper.history_model import history_subset
 from prahom_wrapper.utils import constraints_integration_mode
 from typing import Any, Callable, Dict, List, Set, Tuple, Union
 from pettingzoo.utils.wrappers import BaseWrapper
 from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType, ParallelEnv
-from prahom_wrapper.prahom_wrapper.organizational_model import cardinality, deontic_specifications, \
+from osh_model import cardinality, deontic_specifications, \
     functional_specifications, group_specifications, link, link_type, obligation, \
     organizational_model, permission, plan, plan_operator, social_preference, social_scheme, \
     structural_specifications, time_constraint_type
-from osh_model import osh_model
-from algorithm_configuration import algorithm_configuration, prahom_alg_mngr
+from algorithm_configuration import algorithm_configuration, prahom_alg_fac
 
 
 class prahom_wrapper(BaseWrapper):
@@ -70,7 +71,7 @@ class prahom_wrapper(BaseWrapper):
         return f"{type(self).__name__}<{str(self.env)}>"
 
     ###########################################
-    # The PRAHOM additional features:
+    # The PRAHOM additional features
     ###########################################
 
     def set_organizational_analyze_mode(self):
@@ -78,7 +79,7 @@ class prahom_wrapper(BaseWrapper):
 
     def train_under_constraints(self, env_creator: Callable[..., Union[AECEnv, ParallelEnv]], osh_model: osh_model,
                                 constraint_integration_mode: constraints_integration_mode = constraints_integration_mode.CORRECT,
-                                algorithm_configuration: algorithm_configuration = prahom_alg_mngr.SB3.default_PPO()) -> None:
+                                algorithm_configuration: algorithm_configuration = prahom_alg_fac.SB3().default_PPO()) -> None:
         """Restrict history subset to those where any of the given actions is followed by any of the given observations.
 
         Parameters
@@ -165,12 +166,12 @@ if __name__ == '__main__':
     pz_env = prahom_wrapper(env)
     pz_env.reset(prahom_policy_model=True)
     pz_env.train_under_constraints(env_creator=env,
-        osh_model=(organizational_model(structural_specifications=structural_specifications(roles={"role_0": history_subset()}),
+        osh_model=organizational_model(structural_specifications=structural_specifications(roles={"role_0": history_subset()}),
                                              functional_specifications=functional_specifications(
                                                  social_scheme=social_scheme(goals={"goal_0": history_subset()})),
-                                             deontic_specifications=None)),
+                                             deontic_specifications=None),
         constraint_integration_mode=constraints_integration_mode.CORRECT,
-        algorithm_configuration=prahom_alg_mngr.SB3.default_PPO()
+        algorithm_configuration=prahom_alg_fac.SB3().default_PPO()
     )
     om = pz_env.generate_organizational_specifications(use_gosia=True,use_kosia=False)
     print(om)

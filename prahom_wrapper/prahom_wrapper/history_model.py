@@ -1,23 +1,19 @@
-import sys
-sys.path
-sys.path.append('../../../.')
-
+import numpy as np
 import copy
-from dataclasses import dataclass, field
 import dataclasses
-from enum import Enum
 import itertools
 import json
 import random
-from typing import Any, Callable, Dict, List, OrderedDict, Tuple, Union
 import networkx as nx
 import matplotlib.pyplot as plt
-from pprint import pprint
 import re
-import numpy as np
-from prahom_wrapper.prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
+
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Dict, List, OrderedDict, Tuple, Union
+from pprint import pprint
+from utils import cardinality, draw_networkx_edge_labels
 from PIL import Image
-from prahom_wrapper.utils import draw_networkx_edge_labels
 
 
 INFINITY = 'INFINITY'
@@ -75,9 +71,21 @@ class history_subset:
 
     non_optional_start_end = (None, None)
 
-    def __init__(self):
-        self.history_graph = {}
+    def __init__(self, history_graph: Any = {}):
+        self.history_graph = history_graph
         self.ordinal_counter = 0
+
+    def to_json(self) -> Dict:
+        return self.history_graph
+
+    def __str__(self) -> str:
+        return str(self.history_graph)
+
+    def __repr__(self) -> str:
+        return str(self.history_graph)
+
+    def __eq__(self, other: 'history_subset') -> bool:
+        return self.history_graph == other.history_graph
 
     def add_observations_to_actions(self, observation_labels: List[observation_label], action_labels: List[action_label]):
         """Restrict history subset to those where any of the given observations is followed by any of the given actions.
@@ -669,7 +677,7 @@ class os_to_history_subset_relations:
 
                     ordinal_number += 1
 
-            joint_matching_os_labels[agent] = list(matching_os_labels)
+            # joint_matching_os_labels[agent] = list(matching_os_labels)
 
         return joint_matching_os_labels
 
@@ -758,138 +766,138 @@ class os_to_history_subset_relations:
         return None
 
 
-class os_factory:
+# class os_factory:
 
-    os_model: organizational_model
+#     os_model: organizational_model
 
-    def __init__(self) -> None:
-        self.os_model = None
+#     def __init__(self) -> None:
+#         self.os_model = None
 
-    def new(self):
-        self.os_model = organizational_model(
-            structural_specifications=None, functional_specifications=None, deontic_specifications=None)
-        return self
+#     def new(self):
+#         self.os_model = organizational_model(
+#             structural_specifications=None, functional_specifications=None, deontic_specifications=None)
+#         return self
 
-    def add_role(self, role_name: str) -> 'os_factory':
-        self.os_model.structural_specifications.roles.append(role_name)
-        return self
+#     def add_role(self, role_name: str) -> 'os_factory':
+#         self.os_model.structural_specifications.roles.append(role_name)
+#         return self
 
-    def create(self) -> organizational_model:
-        return self.os_model
-
-
-class history_factory:
-    h_subset: history_subset
-
-    def __init__(self):
-        self.h_subset = history_subset()
-
-    def new(self) -> 'history_factory':
-        return self
-
-    def add_rule(self, observation: observation_label, action: action_label) -> 'history_factory':
-        return self
-
-    def add_pattern(self, str_patter: str) -> 'history_factory':
-        return self
-
-    def add_history(self, history: history) -> 'history_factory':
-        return self
-
-    def create(self) -> history_subset:
-        return self.h_subset
+#     def create(self) -> organizational_model:
+#         return self.os_model
 
 
-class joint_history_factory:
+# class history_factory:
+#     h_subset: history_subset
 
-    jh_subset: os_to_history_subset_relations
+#     def __init__(self):
+#         self.h_subset = history_subset()
 
-    def __init__(self) -> None:
-        self.jh_subset = None
+#     def new(self) -> 'history_factory':
+#         return self
 
-    def new(self) -> 'joint_history_factory':
-        self.jh_subset = os_to_history_subset_relations()
-        return self
+#     def add_rule(self, observation: observation_label, action: action_label) -> 'history_factory':
+#         return self
 
-    def add_a_history_subset(self, agents_number_among_all: int, history_subsets: List[history_subset]) -> 'joint_history_factory':
-        return self
+#     def add_pattern(self, str_patter: str) -> 'history_factory':
+#         return self
 
-    def create(self) -> os_to_history_subset_relations:
-        return self.jh_subset
+#     def add_history(self, history: history) -> 'history_factory':
+#         return self
 
-
-OSF = os_factory()
-"""The main instance of Organizational Specification Factory"""
-
-HF = history_factory()
-"""The main instance of History Factory"""
-
-JHF = joint_history_factory()
-"""The main instance of Joint-History Factory"""
+#     def create(self) -> history_subset:
+#         return self.h_subset
 
 
-class osh_manager():
-    """
-    A class to represent the links between organizational specifications and all possible joint-histories when applied for any agent subset.
+# class joint_history_factory:
 
-    Attributes
-    ----------
-    osh_grah : Dict[Any,Any]
-        The graph to represent all joint-histories whose edges are decorated with their respective os labels
+#     jh_subset: os_to_history_subset_relations
 
-    Methods
-    -------
-    create_relation(self, organizational_model: organizational_model, os_to_history_subset_relations: os_to_history_subset_relations) -> 'osh_manager':
-        Initiates the relation from organizational specifications (under the form of an organizational) to a subset of joint histories.
-    """
+#     def __init__(self) -> None:
+#         self.jh_subset = None
 
-    osh_graph: Dict[Union[observation_label, action_label],
-                    Dict[Union[observation_label, action_label], Dict[os_label, Dict[int, cardinality]]]]
-    """The main graph that represents all (observation,action) and (action,observations) couples of all agents histories decorated with os labels,
-    and ordinal number (int) with cardinality."""
+#     def new(self) -> 'joint_history_factory':
+#         self.jh_subset = os_to_history_subset_relations()
+#         return self
 
-    def __init__(self) -> None:
-        self.osh_graph = {}
+#     def add_a_history_subset(self, agents_number_among_all: int, history_subsets: List[history_subset]) -> 'joint_history_factory':
+#         return self
 
-    def create_relation(self, organizational_model: organizational_model, os_to_history_subset_relations: os_to_history_subset_relations) -> 'osh_manager':
-        """Initiates the relation from organizational specifications (under the form of an organizational) to a subset of joint histories.
+#     def create(self) -> os_to_history_subset_relations:
+#         return self.jh_subset
 
-        Parameters
-        ----------
-        organizational_model : organizational_model
-            An organizational model describing organizational specifications
 
-        os_to_history_subset_relations: os_to_history_subset_relations
-            A subset of joint-histories describing how a subset of agent adopting the organizational specifications should behave
+# OSF = os_factory()
+# """The main instance of Organizational Specification Factory"""
 
-        Returns
-        -------
-        osh_manager
-            `osh_manager` of the current instance
+# HF = history_factory()
+# """The main instance of History Factory"""
 
-        Examples
-        --------
-        >>> oshr = osh_manager()
+# JHF = joint_history_factory()
+# """The main instance of Joint-History Factory"""
 
-        >>> oshr.create_relation(
-                organizational_model=OSF.new()
-                .add_role("Role_0")
-                .create(),
-                os_to_history_subset_relations=JHF.new()
-                .add_a_history_subset(
-                    agents_number_among_all=1,
-                    history_subsets=[HF.new()
-                                    .add_rule("o1", "a1")
-                                    .add_pattern("[[obs1,act1](1,*)[obs2,act2](0,*)obs3,act4](1,2)")
-                                    .add_history([("o1", "a1"), ("o2", "a2")])
-                                    .create()])
-                .create()
-            )
 
-        See Also
-        --------
-        """
-        return self
+# class osh_manager():
+#     """
+#     A class to represent the links between organizational specifications and all possible joint-histories when applied for any agent subset.
+
+#     Attributes
+#     ----------
+#     osh_grah : Dict[Any,Any]
+#         The graph to represent all joint-histories whose edges are decorated with their respective os labels
+
+#     Methods
+#     -------
+#     create_relation(self, organizational_model: organizational_model, os_to_history_subset_relations: os_to_history_subset_relations) -> 'osh_manager':
+#         Initiates the relation from organizational specifications (under the form of an organizational) to a subset of joint histories.
+#     """
+
+#     osh_graph: Dict[Union[observation_label, action_label],
+#                     Dict[Union[observation_label, action_label], Dict[os_label, Dict[int, cardinality]]]]
+#     """The main graph that represents all (observation,action) and (action,observations) couples of all agents histories decorated with os labels,
+#     and ordinal number (int) with cardinality."""
+
+#     def __init__(self) -> None:
+#         self.osh_graph = {}
+
+#     def create_relation(self, organizational_model: organizational_model, os_to_history_subset_relations: os_to_history_subset_relations) -> 'osh_manager':
+#         """Initiates the relation from organizational specifications (under the form of an organizational) to a subset of joint histories.
+
+#         Parameters
+#         ----------
+#         organizational_model : organizational_model
+#             An organizational model describing organizational specifications
+
+#         os_to_history_subset_relations: os_to_history_subset_relations
+#             A subset of joint-histories describing how a subset of agent adopting the organizational specifications should behave
+
+#         Returns
+#         -------
+#         osh_manager
+#             `osh_manager` of the current instance
+
+#         Examples
+#         --------
+#         >>> oshr = osh_manager()
+
+#         >>> oshr.create_relation(
+#                 organizational_model=OSF.new()
+#                 .add_role("Role_0")
+#                 .create(),
+#                 os_to_history_subset_relations=JHF.new()
+#                 .add_a_history_subset(
+#                     agents_number_among_all=1,
+#                     history_subsets=[HF.new()
+#                                     .add_rule("o1", "a1")
+#                                     .add_pattern("[[obs1,act1](1,*)[obs2,act2](0,*)obs3,act4](1,2)")
+#                                     .add_history([("o1", "a1"), ("o2", "a2")])
+#                                     .create()])
+#                 .create()
+#             )
+
+#         See Also
+#         --------
+#         """
+#         return self
 
 
 if __name__ == '__main__':
