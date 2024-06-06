@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 import numpy as np
 import gymnasium
 
@@ -14,6 +15,13 @@ from osh_model import cardinality, deontic_specifications, \
     structural_specifications, time_constraint_type
 from algorithm_configuration import algorithm_configuration, prahom_alg_fac
 
+@dataclass
+class kosia_configuration:
+    pass
+
+@dataclass
+class gosia_configuration:
+    generate_figures: bool = field(default=False)
 
 class prahom_wrapper(BaseWrapper):
     """Creates a wrapper around `env` parameter.
@@ -108,8 +116,35 @@ class prahom_wrapper(BaseWrapper):
         """
         pass
 
-    def generate_organizational_specifications(self, use_kosia = True, use_gosia = True) -> organizational_model:
-        """Play all the joint-policies to get joint-histories to apply KOSIA/GOSIA from these
+    def generate_organizational_specifications(self, use_kosia=True, kosia_configuration: kosia_configuration = {},
+                                               use_gosia=True, gosia_configuration: gosia_configuration = {}) -> organizational_model:
+        """Analyze the trained agents' behavior to determine new organizational specifications.
+
+        Parameters
+        ----------
+        use_kosia : bool, default True
+            Whether using KOSIA to generate organizational specifications
+
+        kosia_configuration: kosia_configuration, default {}
+            The KOSIA configuration
+
+        use_gosia : bool, default True
+            Whether using GOSIA to generate organizational specifications or complete the KOSIA generated organizational model
+
+        kosia_configuration: gosia_configuration, default {}
+            The GOSIA configuration
+
+        Returns
+        -------
+        organizational_model
+
+        Examples
+        --------
+        >>> 
+
+        See Also
+        --------
+        None
         """
 
         os_gosia = organizational_model(
@@ -166,12 +201,13 @@ if __name__ == '__main__':
     pz_env = prahom_wrapper(env)
     pz_env.reset(prahom_policy_model=True)
     pz_env.train_under_constraints(env_creator=env,
-        osh_model=organizational_model(structural_specifications=structural_specifications(roles={"role_0": history_subset()}),
-                                             functional_specifications=functional_specifications(
-                                                 social_scheme=social_scheme(goals={"goal_0": history_subset()})),
-                                             deontic_specifications=None),
-        constraint_integration_mode=constraints_integration_mode.CORRECT,
-        algorithm_configuration=prahom_alg_fac.SB3().default_PPO()
-    )
-    om = pz_env.generate_organizational_specifications(use_gosia=True,use_kosia=False)
+                                   osh_model=organizational_model(structural_specifications=structural_specifications(roles={"role_0": history_subset()}),
+                                                                  functional_specifications=functional_specifications(
+                                       social_scheme=social_scheme(goals={"goal_0": history_subset()})),
+                                       deontic_specifications=None),
+                                   constraint_integration_mode=constraints_integration_mode.CORRECT,
+                                   algorithm_configuration=prahom_alg_fac.SB3().default_PPO()
+                                   )
+    om = pz_env.generate_organizational_specifications(
+        use_gosia=True, use_kosia=False, generate_gosia_figures=True)
     print(om)
