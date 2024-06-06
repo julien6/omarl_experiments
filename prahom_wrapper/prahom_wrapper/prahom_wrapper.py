@@ -1,11 +1,9 @@
-from dataclasses import dataclass, field
 import numpy as np
 import gymnasium
 
-from custom_envs.movingcompany.moving_company_v0 import env, raw_env, parallel_env
-from prahom_wrapper.prahom_wrapper import osh_model
-from prahom_wrapper.prahom_wrapper.history_model import history_subset
-from prahom_wrapper.utils import constraints_integration_mode
+from custom_envs.movingcompany.moving_company_v0 import env as env_creator, raw_env, parallel_env
+from history_model import history_subset
+from utils import constraints_integration_mode, gosia_configuration, kosia_configuration
 from typing import Any, Callable, Dict, List, Set, Tuple, Union
 from pettingzoo.utils.wrappers import BaseWrapper
 from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType, ParallelEnv
@@ -15,13 +13,6 @@ from osh_model import cardinality, deontic_specifications, \
     structural_specifications, time_constraint_type
 from algorithm_configuration import algorithm_configuration, prahom_alg_fac
 
-@dataclass
-class kosia_configuration:
-    pass
-
-@dataclass
-class gosia_configuration:
-    generate_figures: bool = field(default=False)
 
 class prahom_wrapper(BaseWrapper):
     """Creates a wrapper around `env` parameter.
@@ -38,6 +29,7 @@ class prahom_wrapper(BaseWrapper):
         """
         super().__init__(env)
         self.env = env
+        self.prahom_policy_model = None
 
     def __getattr__(self, name: str) -> Any:
         """Returns an attribute with ``name``, unless ``name`` starts with an underscore."""
@@ -56,7 +48,9 @@ class prahom_wrapper(BaseWrapper):
     def render(self) -> None | np.ndarray | str | list:
         return self.env.render()
 
-    def reset(self, seed: int | None = None, options: dict | None = None):
+    def reset(self, seed: int | None = None, options: dict | None = None, prahom_policy_model: bool = False):
+        self.prahom_policy_model = None
+        print(type(self.env))
         self.env.reset(seed=seed, options=options)
 
     def observe(self, agent: AgentID) -> ObsType | None:
@@ -82,18 +76,19 @@ class prahom_wrapper(BaseWrapper):
     # The PRAHOM additional features
     ###########################################
 
-    def set_organizational_analyze_mode(self):
-        self.set_organizational_analyze_mode = True
-
-    def train_under_constraints(self, env_creator: Callable[..., Union[AECEnv, ParallelEnv]], osh_model: osh_model,
+    def train_under_constraints(self, env_creator: Callable[..., Union[AECEnv, ParallelEnv]],
+                                osh_model_constraint: organizational_model,
                                 constraint_integration_mode: constraints_integration_mode = constraints_integration_mode.CORRECT,
-                                algorithm_configuration: algorithm_configuration = prahom_alg_fac.SB3().default_PPO()) -> None:
+                                algorithm_configuration: algorithm_configuration = prahom_alg_fac.SB3().PPO()) -> None:
         """Restrict history subset to those where any of the given actions is followed by any of the given observations.
 
         Parameters
         ----------
         env_creator : [..., Union[AECEnv, ParallelEnv]
             The function that enables creating pettingzoo environment either AEC or Parallel
+
+        osh_model_constraint : organizational_model
+            The organizational model partially defining organizational specifications to satisfy during training
 
         constraint_integration_mode : constraint_integration_mode
             The constraint integration mode: CORRECT, PENALIZE, CORRECT_AT_POLICY
@@ -198,16 +193,30 @@ class prahom_wrapper(BaseWrapper):
 if __name__ == '__main__':
 
     pz_env = raw_env()
-    pz_env = prahom_wrapper(env)
+    pz_env = prahom_wrapper(pz_env)
+
     pz_env.reset(prahom_policy_model=True)
-    pz_env.train_under_constraints(env_creator=env,
-                                   osh_model=organizational_model(structural_specifications=structural_specifications(roles={"role_0": history_subset()}),
-                                                                  functional_specifications=functional_specifications(
-                                       social_scheme=social_scheme(goals={"goal_0": history_subset()})),
+
+    pz_env.train_under_constraints(env_creator=env_creator,
+                                   osh_model_constraint=organizational_model(
+                                       structural_specifications=structural_specifications(
+                                           roles={"role_0": history_subset()},
+                                           role_inheritance_relations=None,
+                                           root_groups=None),
+                                       functional_specifications=functional_specifications(
+                                           social_scheme=social_scheme(
+                                               goals={
+                                                   "goal_0": history_subset()},
+                                               missions=None,
+                                               goals_structure=None,
+                                               mission_to_goals=None,
+                                               mission_to_agent_cardinality=None),
+                                           social_preferences=None),
                                        deontic_specifications=None),
                                    constraint_integration_mode=constraints_integration_mode.CORRECT,
-                                   algorithm_configuration=prahom_alg_fac.SB3().default_PPO()
+                                   algorithm_configuration=prahom_alg_fac.RLlib().MADDPG()
                                    )
+
     om = pz_env.generate_organizational_specifications(
-        use_gosia=True, use_kosia=False, generate_gosia_figures=True)
+        use_kosia=False, use_gosia=True, gosia_configuration=gosia_configuration(generate_figures=True))
     print(om)

@@ -1,9 +1,19 @@
 import json
 import dataclasses
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict
+
+
+@dataclass
+class kosia_configuration:
+    pass
+
+
+@dataclass
+class gosia_configuration:
+    generate_figures: bool = field(default=False)
 
 
 class constraints_integration_mode(Enum):
