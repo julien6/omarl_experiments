@@ -8,10 +8,9 @@ class algorithm_configuration:
     cpu_core_number: Union[int, Literal['auto']] = 'auto'
     gpu_core_number: Union[int, Literal['auto']] = 'auto'
 
+@dataclass
 class PPO_configuration:
-
     policy: str | type[ActorCriticPolicy],
-    env: GymEnv | str,
     learning_rate: float | Schedule = 0.0003,
     n_steps: int = 2048,
     batch_size: int = 64,
