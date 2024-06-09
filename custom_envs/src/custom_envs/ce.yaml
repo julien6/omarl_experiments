@@ -1,0 +1,12 @@
+env: custom_envs
+
+env_args:
+  map_name: "moving_company" # others can be found in ce.py
+  size: 10
+  seed: 42
+  render_mode: "rgb_array"
+
+mask_flag: False
+global_state_flag: False
+opp_action_in_cc: True
+agent_level_batch_update: False

@@ -1,7 +1,6 @@
 import numpy as np
 import gymnasium
 
-from custom_envs.movingcompany.moving_company_v0 import env as env_creator, raw_env, parallel_env
 from history_model import history_subset
 from utils import constraints_integration_mode, gosia_configuration, kosia_configuration
 from typing import Any, Callable, Dict, List, Set, Tuple, Union
@@ -11,7 +10,7 @@ from osh_model import cardinality, deontic_specifications, \
     functional_specifications, group_specifications, link, link_type, obligation, \
     organizational_model, permission, plan, plan_operator, social_preference, social_scheme, \
     structural_specifications, time_constraint_type
-from algorithm_configuration import algorithm_configuration, prahom_alg_fac
+from algorithm_configuration import algorithm_configuration
 
 
 class prahom_wrapper(BaseWrapper):
@@ -79,7 +78,7 @@ class prahom_wrapper(BaseWrapper):
     def train_under_constraints(self, env_creator: Callable[..., Union[AECEnv, ParallelEnv]],
                                 osh_model_constraint: organizational_model,
                                 constraint_integration_mode: constraints_integration_mode = constraints_integration_mode.CORRECT,
-                                algorithm_configuration: algorithm_configuration = prahom_alg_fac.SB3().PPO()) -> None:
+                                algorithm_configuration: algorithm_configuration = {}) -> None:
         """Restrict history subset to those where any of the given actions is followed by any of the given observations.
 
         Parameters
@@ -195,8 +194,6 @@ if __name__ == '__main__':
     pz_env = raw_env()
     pz_env = prahom_wrapper(pz_env)
 
-    pz_env.reset(prahom_policy_model=True)
-
     pz_env.train_under_constraints(env_creator=env_creator,
                                    osh_model_constraint=organizational_model(
                                        structural_specifications=structural_specifications(
@@ -214,7 +211,7 @@ if __name__ == '__main__':
                                            social_preferences=None),
                                        deontic_specifications=None),
                                    constraint_integration_mode=constraints_integration_mode.CORRECT,
-                                   algorithm_configuration=prahom_alg_fac.RLlib().MADDPG()
+                                   algorithm_configuration={}
                                    )
 
     om = pz_env.generate_organizational_specifications(

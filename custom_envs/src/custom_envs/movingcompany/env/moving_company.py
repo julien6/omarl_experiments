@@ -5,16 +5,15 @@ from typing import Dict, Union
 import gymnasium
 import numpy as np
 import random
-from gymnasium.spaces import Discrete, MultiDiscrete
+from gym.spaces import Discrete, MultiDiscrete
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
 from gymnasium.utils import EzPickle
 from PIL import Image
-from pettingzoo.utils.conversions import aec_to_parallel
 from pprint import pprint
-from pettingzoo.utils.conversions import parallel_wrapper_fn
-from custom_envs.movingcompany.env.renderer import GridRenderer
-
+from pettingzoo.utils.conversions import parallel_wrapper_fn, to_parallel
+from renderer import GridRenderer
+from pettingzoo.utils.wrappers import BaseWrapper
 
 FPS = 20
 
@@ -259,7 +258,7 @@ class raw_env(AECEnv, EzPickle):
 
         pass
 
-    def render(self) -> np.ndarray:
+    def render(self, mode="human") -> np.ndarray:
         """
         Renders the environment. In human mode, it can print to terminal, open
         up a graphical window, or open up some other display that a human can see and understand.  
@@ -311,8 +310,7 @@ class raw_env(AECEnv, EzPickle):
         - agents
         - rewards
         - _cumulative_rewards
-        - terminations
-        - truncations
+        - dones
         - infos
         - agent_selection
         And must set up the environment so that render(), step(), and observe()
@@ -326,8 +324,7 @@ class raw_env(AECEnv, EzPickle):
         self.agents = self.possible_agents[:]
         self.rewards = {agent: 0 for agent in self.agents}
         self._cumulative_rewards = {agent: 0 for agent in self.agents}
-        self.terminations = {agent: False for agent in self.agents}
-        self.truncations = {agent: False for agent in self.agents}
+        self.dones = {agent: False for agent in self.agents}
         self.infos = {agent: {"action_masks": self.generate_action_masks(
             agent)} for agent in self.agents}
         self.observations = {agent: self.observe(
@@ -345,20 +342,14 @@ class raw_env(AECEnv, EzPickle):
         agent_selection) and needs to update
         - rewards
         - _cumulative_rewards (accumulating the rewards)
-        - terminations
-        - truncations
+        - dones
         - infos
         - agent_selection (to the next agent)
         And any internal state used by observe() or render()
         """
-        if (
-            self.terminations[self.agent_selection]
-            or self.truncations[self.agent_selection]
-        ):
-            # handles stepping an agent which is already dead
-            # accepts a None action for the one agent, and moves the agent_selection to
-            # the next dead agent,  or if there are no more dead agents, to the next live agent
-            self._was_dead_step(action)
+
+        if self.dones[self.agent_selection]:
+            self._was_done_step(action)
             return
 
         agent = self.agent_selection
@@ -375,11 +366,11 @@ class raw_env(AECEnv, EzPickle):
             self.num_cycle += 1
             if self.num_cycle >= self.max_cycles:
                 for ag in self.agents:
-                    self.truncations[ag] = True
+                    self.dones[ag] = True
 
             if self.check_terminated():
                 for ag in self.agents:
-                    self.terminations[ag] = True
+                    self.dones[ag] = True
 
         elif self._agent_selector.is_first():
             for ag in self.agents:
@@ -409,14 +400,20 @@ class NumpyEncoder(json.JSONEncoder):
 
 if __name__ == '__main__':
 
-    env = raw_env(size=10, seed=42, render_mode="rgb_array")
+    # e = parallel_env(size=10, seed=42, render_mode="rgb_array")
 
-    env = wrappers.AssertOutOfBoundsWrapper(env)
-    # Provides a wide vareity of helpful user errors
-    env = wrappers.OrderEnforcingWrapper(env)
+    # print(type(e))
 
-    env = aec_to_parallel(env)
+    e = raw_env(size=10, seed=42, render_mode="rgb_array")
+    # e = env(size=10, seed=42, render_mode="rgb_array")
 
+    # e = to_parallel(e)
+
+    e.reset()
+
+    print(e.observation_space("agent_0"))
+
+    """
     label_to_obj: Dict = {
         "a0": 0,
         "a1": 1,
@@ -462,11 +459,11 @@ if __name__ == '__main__':
 
     obj_to_label = {str(v): k for k, v in label_to_obj.items()}
 
-    init_obs = env.reset(seed=42)[0]
+    init_obs = e.reset()
 
     print(init_obs)
 
-    joint_history = {agent: [] for agent in env.aec_env.agents}
+    joint_history = {agent: [] for agent in e.aec_env.agents}
 
     for agent in joint_history:
         ag_obs = init_obs[agent]
@@ -492,18 +489,18 @@ if __name__ == '__main__':
         "agent_2": agent_2_policy
     }
 
-    frame_list = [Image.fromarray(env.render())]
+    frame_list = [Image.fromarray(e.render())]
 
     transition_data = []
 
     cumulative_reward = 0
     i = 0
-    while env.agents:
-        # actions = {agent: env.action_space(agent).sample() for agent in env.agents}
+    while e.agents:
+        # actions = {agent: e.action_space(agent).sample() for agent in e.agents}
         print("Step: ", i)
 
         actions = {agent: perfect_policy[agent].pop(0) if len(
-            perfect_policy[agent]) > 0 else 0 for agent in env.agents}
+            perfect_policy[agent]) > 0 else 0 for agent in e.agents}
 
         for agent in joint_history:
             ag_obs = actions[agent]
@@ -511,9 +508,9 @@ if __name__ == '__main__':
             if lab is not None:
                 joint_history[agent] += [lab]
 
-        transition_data += [copy.deepcopy(env.aec_env.grid)]
+        transition_data += [copy.deepcopy(e.aec_env.grid)]
 
-        observations, rewards, terminations, truncations, infos = env.step(
+        observations, rewards, dones, infos = e.step(
             actions)
 
         for agent in joint_history:
@@ -524,7 +521,7 @@ if __name__ == '__main__':
 
         cumulative_reward += rewards["agent_0"]
 
-        img = Image.fromarray(env.render())
+        img = Image.fromarray(e.render())
         frame_list.append(img)
 
         i += 1
@@ -538,34 +535,5 @@ if __name__ == '__main__':
     frame_list[0].save("out.gif", save_all=True,
                        append_images=frame_list[1:], duration=5, loop=0)
 
-    env.close()
-
-    """
-    env.reset(seed=42)
-
-    perfect_policy = [5, 0, 0, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 6, 0, 0, 0, 5, 0, 0, 4, 0, 0, 4,
-                      0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 6, 0, 0, 0, 5, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 6]
-
-    frame_list = [Image.fromarray(env.render())]
-    i = 0
-    for agent in env.agent_iter():
-        observation, reward, termination, truncation, info = env.last()
-
-        if termination or truncation:
-            action = None
-        else:
-            # action = env.action_space(agent).sample(
-            #     mask=observation["action_mask"])
-            action = perfect_policy.pop(0)
-        env.step(action)
-
-        i += 1
-        if i % (len(env.possible_agents) + 1) == 0:
-            img = Image.fromarray(env.render())
-            frame_list.append(img)
-
-    frame_list[0].save("out.gif", save_all=True,
-                       append_images=frame_list[1:], duration=5, loop=0)
-
-    env.close()
+    e.close()
     """
