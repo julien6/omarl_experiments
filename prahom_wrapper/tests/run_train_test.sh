@@ -9,4 +9,4 @@
 
 cd /bettik/soulej/omarl_experiments/
 source prahom_wrapper/tests/prahom_test/bin/activate
-python3 prahom_wrapper/test/marllib_basic_use.py
+python3 prahom_wrapper/tests/marllib_basic_use.py
