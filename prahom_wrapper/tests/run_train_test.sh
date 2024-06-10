@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #OAR -n MPE
-#OAR -l /nodes=1/gpu=1,walltime=4:00:00
+#OAR -l /nodes=1/gpu=1,walltime=3:00:00
 #OAR --stdout %jobid%.out
 #OAR --stderr %jobid%.err
 #OAR --project pr-ai4cmas
