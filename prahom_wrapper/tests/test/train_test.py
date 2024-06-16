@@ -25,6 +25,10 @@ model = marl.build_model(
 
 checkpoint_freq = 10
 
+# MAPPOTrainer_mpe_simple_spread_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object/./.tune_metadata
+
+# MAPPOTrainer_mpe_simple_spread_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object
+
 if len(sys.argv) > 1 and sys.argv[1] == "--test":
 
     checkpoint_path = None
@@ -53,8 +57,6 @@ if len(sys.argv) > 1 and sys.argv[1] == "--test":
         checkpoint_path = os.path.join(
             running_directory, checkpoint_trial_folders[-1])
 
-    print(checkpoint_path)
-
     analysis = Analysis(
         checkpoint_path, default_metric=metric, default_mode=mode)
     df = analysis.dataframe()
@@ -68,10 +70,13 @@ if len(sys.argv) > 1 and sys.argv[1] == "--test":
     best_checkpoint_dir = [p for p in Path(best_logdir).iterdir(
     ) if "checkpoint_" in p.name and (int(p.name.split("checkpoint_")[1]) <= training_iteration and training_iteration <= int(p.name.split("checkpoint_")[1]) + checkpoint_freq)][0]
 
+    checkpoint_number = str(int(best_checkpoint_dir.name.split("checkpoint_")[1]))
+    best_checkpoint_file_path = os.path.join(best_checkpoint_dir, f'checkpoint-{checkpoint_number}')
+
     # rendering
     mappo.render(env, model,
                  restore_path={'params_path': f"{checkpoint_path}/params.json",  # experiment configuration
-                               'model_path': best_checkpoint_dir,  # checkpoint path
+                               'model_path': best_checkpoint_file_path,  # checkpoint path
                                'render': True},  # render
                  local_mode=True,
                  share_policy="all",
