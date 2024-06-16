@@ -11,3 +11,4 @@ prahom_wrapper/venv
 prahom_wrapper/tests/prahom_test
 prahom_wrapper/tensorboard
 tutorial/tuto_env/*
+prahom_wrapper/tests/test/exp_results
