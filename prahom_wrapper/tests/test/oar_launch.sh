@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#OAR -n MovingCompany
+#OAR -n Tests 
 #OAR -l /nodes=1/gpu=1,walltime=4:00:00
 #OAR --stdout %jobid%.out
 #OAR --stderr %jobid%.err
