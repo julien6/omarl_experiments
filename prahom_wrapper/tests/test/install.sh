@@ -1,4 +1,10 @@
-conda create -n marllib python=3.8 -y
+# sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6
+
+if [ ! -f "/applis/environments/conda.sh" ] && [ ! -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+    wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
+    chmod +x Anaconda3-2024.02-1-Linux-x86_64.sh
+    ./Anaconda3-2024.02-1-Linux-x86_64.sh
+fi
 
 bash -i -c '
 
@@ -10,7 +16,9 @@ fi
 
 conda activate marllib
 conda --version
+conda create -n marllib python=3.8 -y
 
+rm -rf Anaconda3-2024.02-1-Linux-x86_64.sh
 git clone https://github.com/Replicable-MARL/MARLlib.git
 cd MARLlib
 pip install --upgrade pip
@@ -31,8 +39,7 @@ pip install pygame==2.3.0
 conda install -c conda-forge libstdcxx-ng
 pip install pyglet==1.5.11
 
-pip install marllib
-'
+pip install marllib'
 
 # oarsub -I -l /nodes=1/gpu=1,walltime=00:30:00 -p "gpumodel='V100'" --project pr-ai4cmas
 # oarsub -S ./run_train_test.sh

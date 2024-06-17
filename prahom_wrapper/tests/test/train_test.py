@@ -23,7 +23,7 @@ mappo = marl.algos.mappo(hyperparam_source="mpe")
 model = marl.build_model(
     env, mappo, {"core_arch": "mlp", "encode_layer": "128-256"})
 
-checkpoint_freq = 10
+checkpoint_freq = 500
 
 # MAPPOTrainer_mpe_simple_spread_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object/./.tune_metadata
 
@@ -66,6 +66,8 @@ if len(sys.argv) > 1 and sys.argv[1] == "--test":
     training_iteration = df.iloc[idx].training_iteration
 
     best_logdir = df.iloc[idx].logdir
+
+    print("==> ", best_logdir)
 
     best_checkpoint_dir = [p for p in Path(best_logdir).iterdir(
     ) if "checkpoint_" in p.name and (int(p.name.split("checkpoint_")[1]) <= training_iteration and training_iteration <= int(p.name.split("checkpoint_")[1]) + checkpoint_freq)][0]
