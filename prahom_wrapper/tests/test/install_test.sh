@@ -1,0 +1,1 @@
+ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments/prahom_wrapper/tests/test ; oarsub -I -l /nodes=1/gpu=1,walltime=00:30:00 -p \"gpumodel='V100'\" --project pr-ai4cmas ; source /applis/environments/conda.sh ; conda activate marllib ; python test.py"

@@ -67,6 +67,8 @@ if len(sys.argv) > 1 and sys.argv[1] == "--test":
 
     best_logdir = df.iloc[idx].logdir
 
+    print("==> ", best_logdir)
+
     best_checkpoint_dir = [p for p in Path(best_logdir).iterdir(
     ) if "checkpoint_" in p.name and (int(p.name.split("checkpoint_")[1]) <= training_iteration and training_iteration <= int(p.name.split("checkpoint_")[1]) + checkpoint_freq)][0]
 
