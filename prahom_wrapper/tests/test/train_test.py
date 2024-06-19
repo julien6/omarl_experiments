@@ -8,7 +8,7 @@ from datetime import datetime
 # prepare the environment academy_pass_and_shoot_with_keeper
 # env = marl.make_env(environment_name="hanabi", map_name="Hanabi-Very-Small")
 env = marl.make_env(environment_name="mpe",
-                    map_name="simple_spread", force_coop=True)
+                    map_name="simple_world_comm", force_coop=True)
 
 # can add extra env params. remember to check env configuration before use
 # env = marl.make_env(environment_name='smac', map_name='3m', difficulty="6", reward_scale_rate=15)
@@ -25,9 +25,8 @@ model = marl.build_model(
 
 checkpoint_freq = 500
 
-# MAPPOTrainer_mpe_simple_spread_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object/./.tune_metadata
-
-# MAPPOTrainer_mpe_simple_spread_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object
+# MAPPOTrainer_mpe_simple_world_comm_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object/./.tune_metadata
+# MAPPOTrainer_mpe_simple_world_comm_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object
 
 if len(sys.argv) > 1 and sys.argv[1] == "--test":
 
@@ -72,8 +71,10 @@ if len(sys.argv) > 1 and sys.argv[1] == "--test":
     best_checkpoint_dir = [p for p in Path(best_logdir).iterdir(
     ) if "checkpoint_" in p.name and (int(p.name.split("checkpoint_")[1]) <= training_iteration and training_iteration <= int(p.name.split("checkpoint_")[1]) + checkpoint_freq)][0]
 
-    checkpoint_number = str(int(best_checkpoint_dir.name.split("checkpoint_")[1]))
-    best_checkpoint_file_path = os.path.join(best_checkpoint_dir, f'checkpoint-{checkpoint_number}')
+    checkpoint_number = str(
+        int(best_checkpoint_dir.name.split("checkpoint_")[1]))
+    best_checkpoint_file_path = os.path.join(
+        best_checkpoint_dir, f'checkpoint-{checkpoint_number}')
 
     # rendering
     mappo.render(env, model,
