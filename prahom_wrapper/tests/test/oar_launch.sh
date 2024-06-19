@@ -15,4 +15,4 @@ fi
 
 conda activate marllib
 
-python test.py
+python train_test.py
