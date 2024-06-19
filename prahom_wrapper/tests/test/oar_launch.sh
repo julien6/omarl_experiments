@@ -105,7 +105,7 @@ SECONDS_DURATION=$(convert_to_seconds $WALLTIME)
 # sleep $SECONDS_DURATION + 60
 show_progress_bar $SECONDS_DURATION + 60
 
-echo "\nTRAINING FINISHED"
+echo -e "\nTRAINING FINISHED!"
 
 rsync -avxH soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/prahom_wrapper/tests/test/exp_results/ ./exp_results/
 ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments/prahom_wrapper/tests/test ; rm -rf tmp_job.sh"

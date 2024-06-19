@@ -39,10 +39,7 @@ pip install pygame==2.3.0
 conda install -c conda-forge libstdcxx-ng
 pip install pyglet==1.5.11
 
-pip install marllib'
+pip install marllib
 
-# oarsub -I -l /nodes=1/gpu=1,walltime=00:30:00 -p "gpumodel='V100'" --project pr-ai4cmas
-# oarsub -S ./run_train_test.sh
-# source /applis/environments/conda.sh
-# conda activate marllib
-# python test.py
+ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; git clone https://github.com/Replicable-MARL/MARLlib.git ; cd cd omarl_experiments/prahom_wrapper/tests/test ; ./install.sh"
+'
