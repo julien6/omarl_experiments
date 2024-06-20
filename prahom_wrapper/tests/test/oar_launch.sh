@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rsync -avxH train_test.py soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/
+
 if [ -e ./tmp_job.sh ]; then
     rm -rf tmp_job.sh
 fi
@@ -56,8 +58,8 @@ echo "Job ended at $(date)"
 EOT
 
 chmod +x tmp_job.sh
-rsync -avxH tmp_job.sh soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/prahom_wrapper/tests/test/
-ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments/prahom_wrapper/tests/test ; rm -rf *.err *.out exp_results ; oarsub -S ./tmp_job.sh"
+rsync -avxH tmp_job.sh soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments
+ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments/ ; rm -rf *.err *.out exp_results ; oarsub -S ./tmp_job.sh"
 mkdir exp_results
 
 convert_to_seconds() {
@@ -95,9 +97,39 @@ show_progress_bar() {
     ELAPSED=$(( ELAPSED + INTERVAL ))
   done
 
-  # Afficher 100% lorsque la durée est terminée
   printf "\r[%s] 100%%\n" $(printf '=%.0s' {1..50})
 }
+
+########################
+
+check_substring() {
+    local file=$1
+    local substring="W soulej"
+    
+    if grep -q "$substring" "$file"; then
+        # found waiting in stats
+        return 0
+    else
+        return 1
+    fi
+}
+
+echo "WAITING FOR TRAINING TO START..."
+
+while true; do
+  ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments ; oarstat -u soulej > stats.log ;"
+  rsync -avxH soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/stats.log .
+  if ! check_substring "stats.log"; then
+    ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments ; rm -rf stats.log ;"
+    rm -rf stats.log
+    sleep 5
+    echo "TRAINING STARTED!"
+    break
+  fi
+  sleep 60
+done
+
+########################
 
 echo "WAITING FOR TRAINING TO FINISH..."
 
@@ -107,6 +139,6 @@ show_progress_bar $SECONDS_DURATION + 60
 
 echo -e "\nTRAINING FINISHED!"
 
-rsync -avxH soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/prahom_wrapper/tests/test/exp_results/ ./exp_results/
-ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments/prahom_wrapper/tests/test ; rm -rf tmp_job.sh"
+rsync -avxH soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/exp_results/ ./exp_results/
+ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments ; rm -rf tmp_job.sh"
 rm -rf tmp_job.sh

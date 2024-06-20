@@ -25,9 +25,6 @@ model = marl.build_model(
 
 checkpoint_freq = 500
 
-# MAPPOTrainer_mpe_simple_spread_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object/./.tune_metadata
-# MAPPOTrainer_mpe_simple_spread_0c232_00000_0_2024-06-16_21-17-18/tmpb1_j4jrnrestore_from_object
-
 if len(sys.argv) > 1 and sys.argv[1] == "--test":
 
     checkpoint_path = None
