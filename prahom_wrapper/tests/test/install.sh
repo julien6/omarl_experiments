@@ -1,4 +1,4 @@
-# sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6
+sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6
 
 if [ ! -f "/applis/environments/conda.sh" ] && [ ! -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
     wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
@@ -6,6 +6,7 @@ if [ ! -f "/applis/environments/conda.sh" ] && [ ! -f "$HOME/anaconda3/etc/profi
     ./Anaconda3-2024.02-1-Linux-x86_64.sh
 fi
 
+    
 bash -i -c '
 
 if [ -e "/applis/environments/conda.sh" ]; then
@@ -41,5 +42,7 @@ pip install pyglet==1.5.11
 
 pip install marllib
 
-ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; git clone https://github.com/Replicable-MARL/MARLlib.git ; cd cd omarl_experiments/prahom_wrapper/tests/test ; ./install.sh"
+if [ -f "$HOME/anaconda3/etc/profile.d/conda.sh"]; then
+    ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; git clone https://github.com/julien6/omarl_experiments.git ; cd omarl_experiments ; git checkout test ; cd prahom_wrapper/tests/test ; ./install.sh"
+fi
 '
