@@ -42,6 +42,8 @@ pip install pyglet==1.5.11
 
 pip install marllib
 
+echo -e "INSTALLATION ON COMPUTATIONAL REMOTE SERVER"
+
 if [ -f "$HOME/anaconda3/etc/profile.d/conda.sh"]; then
     ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; git clone https://github.com/julien6/omarl_experiments.git ; cd omarl_experiments ; git checkout test ; cd prahom_wrapper/tests/test ; ./install.sh"
 fi
