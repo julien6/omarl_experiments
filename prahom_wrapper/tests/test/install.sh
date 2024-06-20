@@ -1,4 +1,6 @@
-sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6
+if [ ! -f "/bettik" ]; then
+    sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6
+fi
 
 if [ ! -f "/applis/environments/conda.sh" ] && [ ! -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
     wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
@@ -26,10 +28,8 @@ pip install --upgrade pip
 pip install -r requirements.txt
 pip install setuptools==65.5.0 pip==21
 pip install wheel==0.38.0
-pip install -r requirements.txt
 pip install "gym>=0.20.0,<0.22.0"
 pip install ray[tune]
-
 pip install protobuf==3.20.*
 python marllib/patch/add_patch.py -y
 
@@ -39,12 +39,11 @@ pip install pygame==2.3.0
 
 conda install -c conda-forge libstdcxx-ng
 pip install pyglet==1.5.11
-
 pip install marllib
 
-echo -e "\n\nINSTALLATION ON COMPUTATIONAL REMOTE SERVER\n"
-
 if [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+    echo -e "\n\nINSTALLATION ON COMPUTATIONAL REMOTE SERVER\n"
     ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; git clone https://github.com/julien6/omarl_experiments.git ; cd omarl_experiments ; git checkout test ; cd prahom_wrapper/tests/test ; ./install.sh"
 fi
-'
+
+echo -e "\n\nINSTALLATION FINISHED!"'
