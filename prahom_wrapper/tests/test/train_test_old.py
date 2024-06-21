@@ -8,7 +8,7 @@ from datetime import datetime
 # prepare the environment academy_pass_and_shoot_with_keeper
 # env = marl.make_env(environment_name="hanabi", map_name="Hanabi-Very-Small")
 env = marl.make_env(environment_name="mpe",
-                    map_name="simple_world_comm", force_coop=False)
+                    map_name="simple_spread", force_coop=True)
 
 # can add extra env params. remember to check env configuration before use
 # env = marl.make_env(environment_name='smac', map_name='3m', difficulty="6", reward_scale_rate=15)
@@ -77,7 +77,7 @@ if len(sys.argv) > 1 and sys.argv[1] == "--test":
                                'model_path': best_checkpoint_file_path,  # checkpoint path
                                'render': True},  # render
                  local_mode=True,
-                 share_policy="group",
+                 share_policy="all",
                  checkpoint_end=False)
 
 else:
@@ -86,4 +86,4 @@ else:
     # mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 20000000}, local_mode=False, num_gpus=1,
     #           num_workers=10, share_policy='all', checkpoint_freq=500)
     mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 20000000}, local_mode=False, num_gpus=1,
-              num_workers=10, share_policy='group', checkpoint_freq=checkpoint_freq)
+              num_workers=10, share_policy='all', checkpoint_freq=checkpoint_freq)
