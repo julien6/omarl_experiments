@@ -360,6 +360,7 @@ class history_graph:
 
         hist: history = []
         order_index = 0
+        MAX_CARDINALITY = 10
 
         passed_transitions: Dict[label,
                                  Dict[label, Dict[int, cardinality]]] = {}
@@ -398,11 +399,14 @@ class history_graph:
                     passed_transitions.setdefault(label1, {})
                     passed_transitions[label1].setdefault(_label2, {})
                     passed_transitions[label1][_label2][order_index] = self.graph[label1][_label2][order_index]
-
-                if passed_transitions[label1][_label2][order_index].lower_bound != "0" and \
-                        passed_transitions[label1][_label2][order_index].upper_bound != "0":
-
-                    if passed_transitions[label1][_label2][order_index].lower_bound == "0" and random.random() > 0.5:
+                
+                if not (int(passed_transitions[label1][_label2][order_index].lower_bound) == "0" and \
+                        int(passed_transitions[label1][_label2][order_index].upper_bound) == "0"):
+                    
+                    if passed_transitions[label1][_label2][order_index].upper_bound == "*":
+                        passed_transitions[label1][_label2][order_index].upper_bound = random.randint(passed_transitions[label1][_label2][order_index].lower_bound, passed_transitions[label1][_label2][order_index].lower_bound + MAX_CARDINALITY)
+                    
+                    if passed_transitions[label1][_label2][order_index].lower_bound == "0" and random.random() > 1:
                         order_index += 1
                         continue
                     else:
@@ -428,7 +432,7 @@ class history_graph:
 
                         label1 = _label2
                         order_sorted_transition = [[(label2, ord_index) for ord_index in order_card.keys(
-                        )] for label2, order_card in passed_transitions[label1].items()]
+                        )] for label2, order_card in self.graph[label1].items()]
                         order_sorted_transition = list(
                             itertools.chain.from_iterable(order_sorted_transition))
                         order_sorted_transition.sort(
@@ -436,7 +440,8 @@ class history_graph:
                         label2 = order_sorted_transition[0][0]
                         order_index = order_sorted_transition[0][1]
                         break
-
+        
+        print(passed_transitions)
         print(label1, label2, order_index)
 
     def next_actions(self, history: history, observation: observation) -> List[action]:
