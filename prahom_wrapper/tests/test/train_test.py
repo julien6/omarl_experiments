@@ -16,6 +16,9 @@ env = marl.make_env(environment_name="mpe",
 # initialize algorithm and load hyperparameters
 mappo = marl.algos.mappo(hyperparam_source="mpe")
 
+# TODO
+# mappo = constrain_wrapper(mappo)
+
 # can add extra algorithm params. remember to check algo_config hyperparams before use
 # mappo = marl.algos.MAPPO(hyperparam_source='common', use_gae=True,  batch_episode=10, kl_coeff=0.2, num_sgd_iter=3)
 

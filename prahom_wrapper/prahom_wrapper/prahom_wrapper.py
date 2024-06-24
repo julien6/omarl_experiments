@@ -10,8 +10,6 @@ from osh_model import cardinality, deontic_specifications, \
     functional_specifications, group_specifications, link, link_type, obligation, \
     organizational_model, permission, plan, plan_operator, social_preference, social_scheme, \
     structural_specifications, time_constraint_type
-from algorithm_configuration import algorithm_configuration
-
 
 class prahom_wrapper(BaseWrapper):
     """Creates a wrapper around `env` parameter.

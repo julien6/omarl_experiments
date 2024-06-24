@@ -3,7 +3,7 @@ import dataclasses
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 
 @dataclass
@@ -37,8 +37,8 @@ class constraints_integration_mode(Enum):
 
 @dataclass
 class cardinality:
-    lower_bound: int | str
-    upper_bound: int | str
+    lower_bound: Union[int, str]
+    upper_bound: Union[int, str]
 
     def __str__(self) -> str:
         return f'({self.lower_bound},{self.upper_bound})'

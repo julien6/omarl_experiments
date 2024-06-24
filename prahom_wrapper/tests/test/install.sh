@@ -30,6 +30,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 pip install setuptools==65.5.0 pip==21
 pip install wheel==0.38.0
+pip install scikit-learn
 pip install -r requirements.txt
 pip install "gym>=0.20.0,<0.22.0"
 pip install ray[tune]
