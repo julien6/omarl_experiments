@@ -66,13 +66,13 @@ class history_graph:
         --------
         None
         """
-        for label in observation_labels:
-            for label in action_labels:
+        for label1 in observation_labels:
+            for label2 in action_labels:
                 self.graph.setdefault(
-                    label, {})
-                self.graph[label].setdefault(
-                    label, {})
-                self.graph[label][label][self.ordinal_counter] = None
+                    label1, {})
+                self.graph[label1].setdefault(
+                    label2, {})
+                self.graph[label1][label2][self.ordinal_counter] = None
         self.ordinal_counter += 1
 
     def add_actions_to_observations(self, action_labels: List[label], observation_labels: List[label]):
@@ -99,13 +99,13 @@ class history_graph:
         --------
         None
         """
-        for label in observation_labels:
-            for label in action_labels:
+        for label1 in observation_labels:
+            for label2 in action_labels:
                 self.graph.setdefault(
-                    label, {})
-                self.graph[label].setdefault(
-                    label, {})
-                self.graph[label][label][self.ordinal_counter] = None
+                    label1, {})
+                self.graph[label1].setdefault(
+                    label2, {})
+                self.graph[label1][label2][self.ordinal_counter] = None
         self.ordinal_counter += 1
 
     def add_labels_to_labels(self, src_labels: List[Union[label, label]],
@@ -357,7 +357,7 @@ class history_graph:
         self.non_optional_start_end = parse_into_graph(tuple_pattern)
 
     def sample(self, seed: int = 42) -> history:
-
+        # TODO: Finalize the sample code
         hist: history = []
         order_index = 0
         MAX_CARDINALITY = 10
@@ -375,79 +375,101 @@ class history_graph:
             order_index = min(order_indexes)
 
         if self.graph[current_transition[0]][current_transition[1]][order_index] == None:
+
+            print(current_transition[0], current_transition[1], order_index)
             hist += current_transition
 
         order_index += 1
-        label1 = current_transition[1]
-        label2 = None
 
-        order_sorted_transition = [[(label2, ord_index) for ord_index in order_card.keys(
-        )] for label2, order_card in self.graph[label1].items()]
-        order_sorted_transition = list(
-            itertools.chain.from_iterable(order_sorted_transition))
-        order_sorted_transition.sort(key=lambda x: x[1])
+        def next_transition(label: label, order_index: int) -> Tuple[label, label]:
 
-        for _label2, ord2 in order_sorted_transition:
+            label1 = label
+            label2 = None
 
-            if ord2 == order_index:
+            order_sorted_transition = [[(label2, ord_index) for ord_index in order_card.keys(
+            )] for label2, order_card in self.graph[label1].items()]
+            order_sorted_transition = list(
+                itertools.chain.from_iterable(order_sorted_transition))
+            order_sorted_transition.sort(key=lambda x: x[1])
 
-                if self.graph[label1][_label2][order_index] == None:
-                    label2 = _label2
-                    break
+            for _label2, ord2 in order_sorted_transition:
 
-                elif passed_transitions.get(label1, {}).get(_label2, {}).get(order_index, None) == None:
-                    passed_transitions.setdefault(label1, {})
-                    passed_transitions[label1].setdefault(_label2, {})
-                    passed_transitions[label1][_label2][order_index] = self.graph[label1][_label2][order_index]
-                
-                if not (int(passed_transitions[label1][_label2][order_index].lower_bound) == "0" and \
-                        int(passed_transitions[label1][_label2][order_index].upper_bound) == "0"):
-                    
-                    if passed_transitions[label1][_label2][order_index].upper_bound == "*":
-                        passed_transitions[label1][_label2][order_index].upper_bound = random.randint(passed_transitions[label1][_label2][order_index].lower_bound, passed_transitions[label1][_label2][order_index].lower_bound + MAX_CARDINALITY)
-                    
-                    if passed_transitions[label1][_label2][order_index].lower_bound == "0" and random.random() > 1:
-                        order_index += 1
-                        continue
-                    else:
-                        # decrement the special transition cardinaltiy
-                        trans_card = passed_transitions[label1][_label2][order_index]
-                        lower_bound = "*" if trans_card.lower_bound == "*" else str(
-                            int(trans_card.lower_bound) - 1 if int(trans_card.lower_bound) - 1 >= 0 else 0)
-                        upper_bound = "*" if trans_card.upper_bound == "*" else str(
-                            int(trans_card.upper_bound) - 1 if int(trans_card.upper_bound) - 1 >= 0 else 0)
-                        passed_transitions[label1][_label2][order_index] = cardinality(
-                            lower_bound, upper_bound)
+                if ord2 == order_index:
 
-                        # if it reaches a new sub-cycle, reset its cardinality
-                        father_labels = [l for l in passed_transitions.keys(
-                        ) if passed_transitions[l].get(_label2, None) != None]
-                        for father_label in father_labels:
-                            if father_label != label1:
-                                for card_i in passed_transitions[father_label][_label2].keys():
-                                    if passed_transitions[father_label][_label2][card_i].lower_bound == "0" and \
-                                            passed_transitions[father_label][_label2][card_i].upper_bound == "0" and card_i < order_index:
-                                        passed_transitions[father_label][_label2][card_i] = copy.deepcopy(
-                                            self.graph[father_label][_label2][card_i])
-
-                        label1 = _label2
-                        order_sorted_transition = [[(label2, ord_index) for ord_index in order_card.keys(
-                        )] for label2, order_card in self.graph[label1].items()]
-                        order_sorted_transition = list(
-                            itertools.chain.from_iterable(order_sorted_transition))
-                        order_sorted_transition.sort(
-                            key=lambda x: abs(x[1]-order_index))
-                        label2 = order_sorted_transition[0][0]
-                        order_index = order_sorted_transition[0][1]
+                    if self.graph[label1][_label2][order_index] == None:
+                        label2 = _label2
                         break
-        
-        print(passed_transitions)
-        print(label1, label2, order_index)
 
-    def next_actions(self, history: history, observation: observation) -> List[action]:
-        # for obs_label, act_label in history:
-        #     if
-        pass
+                    elif passed_transitions.get(label1, {}).get(_label2, {}).get(order_index, None) == None:
+                        passed_transitions.setdefault(label1, {})
+                        passed_transitions[label1].setdefault(_label2, {})
+                        passed_transitions[label1][_label2][order_index] = self.graph[label1][_label2][order_index]
+
+                    if not (int(passed_transitions[label1][_label2][order_index].lower_bound) == "0" and
+                            int(passed_transitions[label1][_label2][order_index].upper_bound) == "0"):
+
+                        if passed_transitions[label1][_label2][order_index].upper_bound == "*":
+                            passed_transitions[label1][_label2][order_index].upper_bound = random.randint(
+                                passed_transitions[label1][_label2][order_index].lower_bound, passed_transitions[label1][_label2][order_index].lower_bound + MAX_CARDINALITY)
+
+                        if passed_transitions[label1][_label2][order_index].lower_bound == "0" and random.random() > 0.5:
+                            order_index += 1
+                            continue
+                        else:
+                            # decrement the special transition cardinaltiy
+                            trans_card = passed_transitions[label1][_label2][order_index]
+                            lower_bound = "*" if trans_card.lower_bound == "*" else str(
+                                int(trans_card.lower_bound) - 1 if int(trans_card.lower_bound) - 1 >= 0 else 0)
+                            upper_bound = "*" if trans_card.upper_bound == "*" else str(
+                                int(trans_card.upper_bound) - 1 if int(trans_card.upper_bound) - 1 >= 0 else 0)
+                            if lower_bound == "1":
+                                lower_bound = "0"
+                            if upper_bound == "1":
+                                upper_bound = "0"
+                            passed_transitions[label1][_label2][order_index] = cardinality(
+                                lower_bound, upper_bound)
+
+                            # if it reaches a new sub-cycle, reset its cardinality
+                            father_labels = [l for l in passed_transitions.keys(
+                            ) if passed_transitions[l].get(_label2, None) != None]
+                            for father_label in father_labels:
+                                if father_label != label1:
+                                    for card_i in passed_transitions[father_label][_label2].keys():
+                                        if passed_transitions[father_label][_label2][card_i].lower_bound == "0" and \
+                                                passed_transitions[father_label][_label2][card_i].upper_bound == "0" and card_i < order_index:
+                                            passed_transitions[father_label][_label2][card_i] = copy.deepcopy(
+                                                self.graph[father_label][_label2][card_i])
+
+                            label1 = _label2
+                            order_sorted_transition = [[(label2, ord_index) for ord_index in order_card.keys(
+                            )] for label2, order_card in self.graph[label1].items()]
+                            order_sorted_transition = list(
+                                itertools.chain.from_iterable(order_sorted_transition))
+                            order_sorted_transition.sort(
+                                key=lambda x: abs(x[1]-order_index))
+                            label2 = order_sorted_transition[0][0]
+                            order_index = order_sorted_transition[0][1]
+                            break
+
+            return label1, label2, order_index
+
+        label1 = None
+        label2 = None
+        for i in range(0, 10):
+            label1, label2, order_index = next_transition(
+                current_transition[1], order_index)
+
+            print(label1, label2, order_index)
+
+            current_transition = (label1, label2)
+            hist += [current_transition]
+            order_index += 1
+
+    def next_actions(self, history: history, observation: observation) -> Union[List[action], None]:
+        # TODO: Take into account the history when sample() is finished
+        if self.graph.get(observation, None) == None:
+            return None
+        return list(self.graph[observation].keys())
 
     def plot_graph(self, show: bool = False, render_rgba: bool = False, save: bool = False):
 
@@ -515,6 +537,8 @@ if __name__ == '__main__':
     # hs.add_pattern("[[0,1](0,1),2,3,[4,5](1,3),6](1,1)")
     # hs.add_pattern("[[0,1](2,2),2](3,3)")
     # hs.add_pattern("[0,[1,2](0,4),3](1,2)")
-    hs.add_pattern("[[0,1](0,2),2,3,[0,1](3,3),2,3](1,2)")
+    # hs.add_pattern("[[0,1](0,2),2,3,[0,1](3,3),2,3](1,2)")
+    hs.add_observations_to_actions(["obs1", "obs2"], ["act1", "act2", "act3"])
     # hs.plot_graph(show=True)
-    hs.sample(seed=89)
+    print(hs.next_actions(history=None, observation="obs1"))
+    # hs.sample(seed=89)
