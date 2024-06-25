@@ -12,9 +12,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, OrderedDict, Tuple, Union
 from pprint import pprint
-from utils import cardinality, draw_networkx_edge_labels
+from prahom_wrapper.utils import cardinality, draw_networkx_edge_labels
 from PIL import Image
-from history_graph import history_graph, observation, action, label, history, history_pattern
+from prahom_wrapper.history_graph import history_graph, observation, action, label, history, history_pattern
 
 
 class history_subset:
