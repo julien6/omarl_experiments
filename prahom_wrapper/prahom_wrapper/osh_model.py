@@ -1,11 +1,12 @@
+import copy
 import json
 import dataclasses
 
 from enum import Enum
 from dataclasses import dataclass, field
 from pprint import pprint
-from typing import Any, Callable, Dict, List
-from history_model import history_subset
+from typing import Any, Callable, Dict, List, Union
+from history_model import history_subset, hs_factory
 from utils import cardinality
 
 INFINITY = 'INFINITY'
@@ -13,13 +14,18 @@ INFINITY = 'INFINITY'
 
 class os_encoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, dict):
-            return
         if isinstance(o, history_subset):
-            return o.to_json()
+            return o.to_dict()
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
         return super().default(o)
+
+
+def decode_obl(d):
+    if "obligation" in d:
+        role, mission, time_constraint = d[10:-1].split(",")
+        return obligation(role, mission, time_constraint_type[time_constraint])
+    return d
 
 
 class organizational_specification:
@@ -111,7 +117,7 @@ class structural_specifications(organizational_specification):
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'structural_specifications':
         return structural_specifications(
-            roles={role(r): history_subset(history_graph=hs)
+            roles={role(r): history_subset.from_dict(hs)
                    for r, hs in d['roles'].items()},
             role_inheritance_relations={role(
                 k): [role(r) for r in v] for k, v in d['role_inheritance_relations'].items()},
@@ -163,7 +169,7 @@ class social_scheme(organizational_specification):
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'social_scheme':
         return social_scheme(
-            goals={goal(g): history_subset(hs)
+            goals={goal(g): history_subset.from_dict(hs)
                    for g, hs in d['goals'].items()},
             missions=[mission(m) for m in d['missions']],
             goals_structure=plan.from_dict(d['goals_structure']),
@@ -210,47 +216,91 @@ class time_constraint_type(str, Enum):
     ANY = 'ANY'
 
 
-@dataclass
 class deontic_specification(organizational_specification):
-    role: role
-    mission: mission
-    time_constraint: time_constraint_type | str = time_constraint_type.ANY
+
+    def __init__(self, role: role, mission: mission, time_constraint: Union[time_constraint_type, str] = time_constraint_type.ANY):
+        self.role = role
+        self.mission: mission = mission
+        self.time_constraint = time_constraint
+
+    def __eq__(self, other):
+        if not isinstance(other, deontic_specification):
+            return NotImplemented
+        return (self.role, self.mission, self.time_constraint) == (other.role, other.mission, other.time_constraint)
+
+    def __hash__(self):
+        return hash((self.role, self.mission, self.time_constraint))
+
+    def __repr__(self):
+        return f"deontic_specification({self.role}, {self.mission}, {self.time_constraint})"
 
 
-@dataclass
 class permission(deontic_specification, organizational_specification):
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'permission':
+        role, mission, time_constraint = d[1:-1].replace(" ", "").split(",")
         return permission(
-            role=d['role'],
-            mission=d['mission'],
-            time_constraint=time_constraint_type.ANY if 'ANY' in d.get('time_constraints', d.get(
-                'time_constraints', time_constraint_type.ANY)) else time_constraint_type.ANY
+            role=role,
+            mission=mission,
+            time_constraint=time_constraint_type[time_constraint]
         )
 
+    def __eq__(self, other):
+        if not isinstance(other, permission):
+            return NotImplemented
+        return (self.role, self.mission, self.time_constraint) == (other.role, other.mission, other.time_constraint)
 
-@dataclass
+    def __hash__(self):
+        return hash((self.role, self.mission, self.time_constraint))
+
+    def __str__(self):
+        return f"({self.role}, {self.mission}, {self.time_constraint})"
+
+    def __repr__(self):
+        return f"({self.role}, {self.mission}, {self.time_constraint})"
+
+
 class obligation(deontic_specification, organizational_specification):
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'obligation':
+        role, mission, time_constraint = d[1:-1].replace(" ", "").split(",")
         return obligation(
-            role=d['role'],
-            mission=d['mission'],
-            time_constraint=time_constraint_type.ANY if 'ANY' in d.get('time_constraints', d.get(
-                'time_constraints', time_constraint_type.ANY)) else time_constraint_type.ANY
+            role=role,
+            mission=mission,
+            time_constraint=time_constraint_type[time_constraint]
         )
+
+    def __eq__(self, other):
+        if not isinstance(other, obligation):
+            return NotImplemented
+        return (self.role, self.mission, self.time_constraint) == (other.role, other.mission, other.time_constraint)
+
+    def __hash__(self):
+        return hash((self.role, self.mission, self.time_constraint))
+
+    def __str__(self):
+        return f"({self.role}, {self.mission}, {self.time_constraint})"
+
+    def __repr__(self):
+        return f"({self.role}, {self.mission}, {self.time_constraint})"
 
 
 @dataclass
 class deontic_specifications(organizational_specification):
-    permissions: List[permission]
-    obligations: List[obligation]
+    permissions: Dict[permission, str]
+    obligations: Dict[obligation, str]
+
+    def to_dict(self) -> Dict:
+        return {"permissions": {permission.__str__(): agent_name for permission, agent_name in self.permissions.items()},
+                "obligations": {obligation.__str__(): agent_name for obligation, agent_name in self.obligations.items()}}
 
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'deontic_specifications':
         return deontic_specifications(
-            permissions=[permission.from_dict(p) for p in d['permissions']],
-            obligations=[obligation.from_dict(o) for o in d['obligations']]
+            permissions={permission.from_dict(
+                p): agent_name for p, agent_name in d['permissions'].items()},
+            obligations={obligation.from_dict(
+                o): agent_name for o, agent_name in d['obligations'].items()}
         )
 
 
@@ -332,7 +382,8 @@ if __name__ == "__main__":
     # --------------------------------------------
 
     structural_specs = structural_specifications(
-        roles={'role_1': {}, 'role_2': {}},
+        roles={'role_1': hs_factory.new().create(
+        ), 'role_2': hs_factory.new().create()},
         role_inheritance_relations=role_inheritance_relations,
         root_groups={"group1": group1}
     )
@@ -343,7 +394,8 @@ if __name__ == "__main__":
 
     # --------------------------------------------
     # Instantiate the social schemes
-    goals = {'goal1': {}, 'goal2': {}, 'goal3': {}}
+    goals = {'goal1': hs_factory.new().create(), 'goal2': hs_factory.new(
+    ).create(), 'goal3': hs_factory.new().create()}
     missions = ['mission1', 'mission2']
     goals_structure = plan(
         goal='goal1',
@@ -402,28 +454,28 @@ if __name__ == "__main__":
 
     # --------------------------------------------
     # Define the permissions
-    permissions = [
+    permissions = {
         permission(
             role='role_1',
             mission='mission1',
             time_constraint=time_constraint_type.ANY
-        ),
+        ): "agent_1",
         permission(
             role='role_3',
             mission='mission1',
             time_constraint=time_constraint_type.ANY
-        )
-    ]
+        ): "agent_3"
+    }
     # --------------------------------------------
     # --------------------------------------------
     # Define the obligations
-    obligations = [
+    obligations = {
         obligation(
             role='role_2',
             mission='mission2',
             time_constraint=time_constraint_type.ANY
-        )
-    ]
+        ): "agent_2"
+    }
     # --------------------------------------------
 
     deontic_specs = deontic_specifications(
@@ -441,22 +493,32 @@ if __name__ == "__main__":
     ############################################
 
     print(org_model)
+    om = copy.deepcopy(org_model)
 
     print("="*30)
 
-    json.dump(dataclasses.asdict(org_model), open("organizational_model1.json", "w"),
+    ds = org_model.deontic_specifications.to_dict()
+    del org_model.__dict__["deontic_specifications"]
+    org_model.__dict__["deontic_specifications"] = ds
+    print(org_model)
+
+    json.dump(org_model, open("organizational_model1.json", "w"),
               indent=4, cls=os_encoder)
+
+    print("="*30)
 
     os1 = organizational_model.from_dict(
         json.load(open("organizational_model1.json")))
 
-    json.dump(dataclasses.asdict(os1), open("organizational_model2.json", "w"),
-              indent=4, cls=os_encoder)
-
-    os2 = organizational_model.from_dict(
-        json.load(open("organizational_model2.json")))
-
     print(os1)
-    print("-"*30)
-    print(os2)
-    print(os1 == os2)
+
+    # json.dump(dataclasses.asdict(os1), open("organizational_model2.json", "w"),
+    #           indent=4, cls=os_encoder)
+
+    # os2 = organizational_model.from_dict(
+    #     json.load(open("organizational_model2.json")))
+
+    # print(os1)
+    # print("-"*30)
+    # print(os2)
+    # print(os1 == os2)

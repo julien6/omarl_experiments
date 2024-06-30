@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import re
 
 from typing import Any, Dict, List, Tuple, Union
-from prahom_wrapper.utils import cardinality, draw_networkx_edge_labels
+from utils import cardinality, draw_networkx_edge_labels
 
 observation = Any
 action = Any
@@ -24,14 +24,19 @@ class history_graph:
 
     ordinal_counter: int
 
-    non_optional_start_end = (None, None)
+    non_optional_start_end:Tuple[label, label]
 
-    def __init__(self, graph: Any = {}):
+    def __init__(self, graph: Any = {}, non_optional_start_end = (None, None)):
         self.graph = graph
         self.ordinal_counter = 0
+        self.non_optional_start_end = non_optional_start_end
 
-    def to_json(self) -> Dict:
-        return self.graph
+    def to_dict(self) -> Dict:
+        return {"graph": self.graph, "non_optional_start_end": self.non_optional_start_end}
+
+    @staticmethod
+    def from_dict(obj: Dict) -> 'history_graph':
+        return history_graph(obj["graph"], obj["non_optional_start_end"])
 
     def __str__(self) -> str:
         return str(self.graph)
@@ -537,8 +542,13 @@ if __name__ == '__main__':
     # hs.add_pattern("[[0,1](0,1),2,3,[4,5](1,3),6](1,1)")
     # hs.add_pattern("[[0,1](2,2),2](3,3)")
     # hs.add_pattern("[0,[1,2](0,4),3](1,2)")
-    # hs.add_pattern("[[0,1](0,2),2,3,[0,1](3,3),2,3](1,2)")
+    hs.add_pattern("[[0,1](0,2),2,3,[0,1](3,3),2,3](1,2)")
     hs.add_observations_to_actions(["obs1", "obs2"], ["act1", "act2", "act3"])
     # hs.plot_graph(show=True)
-    print(hs.next_actions(history=None, observation="obs1"))
+    # print(hs.next_actions(history=None, observation="obs1"))
+
+    print(hs)
+    # print(hs.to_dict())
+    print(hs.from_dict(hs.to_dict()))
+
     # hs.sample(seed=89)
