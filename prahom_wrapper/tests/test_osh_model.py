@@ -1,5 +1,5 @@
 import unittest
-from prahom_wrapper.v2.prahom_wrapper.history_model import history_subset, joint_history_subset, osh_relations, os_factory, history_factory, joint_history_factory
+from prahom_wrapper.history_model import history_subset
 
 
 class test_history_subset(unittest.TestCase):

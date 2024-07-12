@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple
-from history_model import observation
+from history_graph import observation
 from llm_manager import llm_manager
 
 class actions_manager:

@@ -1,15 +1,22 @@
 import numpy as np
 import gymnasium
+import os
+import sys
 
-from history_model import history_subset
 from utils import constraints_integration_mode, gosia_configuration, kosia_configuration
 from typing import Any, Callable, Dict, List, Set, Tuple, Union
 from pettingzoo.utils.wrappers import BaseWrapper
-from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType, ParallelEnv
-from osh_model import cardinality, deontic_specifications, \
+from pettingzoo.utils.env import AECEnv, ParallelEnv, ObsType, ActionType, AgentID
+from marllib import marl
+from ray.tune import Analysis
+from pathlib import Path
+from datetime import datetime
+
+from osr_model import cardinality, deontic_specifications, \
     functional_specifications, group_specifications, link, link_type, obligation, \
     organizational_model, permission, plan, plan_operator, social_preference, social_scheme, \
     structural_specifications, time_constraint_type
+
 
 class prahom_wrapper(BaseWrapper):
     """Creates a wrapper around `env` parameter.
@@ -17,7 +24,7 @@ class prahom_wrapper(BaseWrapper):
     All AECEnv wrappers should inherit from this base class
     """
 
-    def __init__(self, env: AECEnv[AgentID, ObsType, ActionType]):
+    def __init__(self, env: AECEnv):
         """
         Initializes the wrapper.
 
@@ -47,7 +54,6 @@ class prahom_wrapper(BaseWrapper):
 
     def reset(self, seed: int | None = None, options: dict | None = None, prahom_policy_model: bool = False):
         self.prahom_policy_model = None
-        print(type(self.env))
         self.env.reset(seed=seed, options=options)
 
     def observe(self, agent: AgentID) -> ObsType | None:
@@ -73,10 +79,10 @@ class prahom_wrapper(BaseWrapper):
     # The PRAHOM additional features
     ###########################################
 
-    def train_under_constraints(self, env_creator: Callable[..., Union[AECEnv, ParallelEnv]],
-                                osh_model_constraint: organizational_model,
+    def train_under_constraints(self,
+                                osr_model_constraint: organizational_model,
                                 constraint_integration_mode: constraints_integration_mode = constraints_integration_mode.CORRECT,
-                                algorithm_configuration: algorithm_configuration = {}) -> None:
+                                algorithm_configuration: Dict = {}) -> None:
         """Restrict history subset to those where any of the given actions is followed by any of the given observations.
 
         Parameters
@@ -84,15 +90,14 @@ class prahom_wrapper(BaseWrapper):
         env_creator : [..., Union[AECEnv, ParallelEnv]
             The function that enables creating pettingzoo environment either AEC or Parallel
 
-        osh_model_constraint : organizational_model
+        osr_model_constraint : organizational_model
             The organizational model partially defining organizational specifications to satisfy during training
 
         constraint_integration_mode : constraint_integration_mode
             The constraint integration mode: CORRECT, PENALIZE, CORRECT_AT_POLICY
 
-        algorithm_configuration : algorithm_configuration
-            The configuration of a predefined MARL algorithm (PPO, MADDPG) to be used with a library (StableBaseLines3, RLlib)
-            that can be manually fine-tuned or automatically with Hyper-parameter Optimizer (Optuna)
+        algorithm_configuration : Dict
+            The configuration of a predefined MARL algorithm (MAPPO, MADDPG) to be used with MARLlib
 
         Returns
         -------

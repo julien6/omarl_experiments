@@ -1,30 +1,25 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '../../../prahom_wrapper')))
 
 from marllib import marl
 from ray.tune import Analysis
 from pathlib import Path
 from datetime import datetime
+
 from prahom_wrapper.history_model import hs_factory
-from prahom_wrapper.osh_model import organizational_model, structural_specifications, functional_specifications, deontic_specifications, role, social_scheme, obligation
+from prahom_wrapper.osr_model import organizational_model, structural_specifications, functional_specifications, deontic_specifications, role, social_scheme, obligation
 from prahom_wrapper.prahom_wrapper.observations_model import simple_world_comm_obs_mngr
 
-hs_factory.set_observations_manager(simple_world_comm_obs_mngr)
-hs_factory.set_actions_manager(simple_world_comm_act_mngr)
+# TODO:
+# hs_factory.set_observations_manager(simple_world_comm_obs_mngr)
+# hs_factory.set_actions_manager(simple_world_comm_act_mngr)
 
-osh = organizational_model(structural_specifications=structural_specifications(roles={"role1": hs_factory.new().add_rules(
+osr = organizational_model(structural_specifications=structural_specifications(roles={"role1": hs_factory.new().add_rules(
     {(None, "obs1"): ["act1", "act2"]}, {}).create()}, role_inheritance_relations=None, root_groups=None), functional_specifications=functional_specifications(social_scheme=social_scheme(goals={"default_goal": hs_factory.add_pattern("[#any_obs,#any_act](0,*),obs_goal", simple_world_comm_obs_mngr.set_use_llm(False))}), social_preferences=None), deontic_specifications=deontic_specifications(obligations={obligation("role1", "default_goal"): "agent_0"}))
-
-
-print()
 
 # prepare the environment academy_pass_and_shoot_with_keeper
 env = marl.make_env(environment_name="mpe",
                     map_name="simple_world_comm", force_coop=False)
-
-print("=> ", type(env[0]))
 
 # can add extra env params. remember to check env configuration before use
 # env = marl.make_env(environment_name='smac', map_name='3m', difficulty="6", reward_scale_rate=15)

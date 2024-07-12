@@ -7,7 +7,7 @@ from utils import constraints_integration_mode, gosia_configuration, kosia_confi
 from typing import Any, Callable, Dict, List, Set, Tuple, Union
 from pettingzoo.utils.wrappers import BaseWrapper
 from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType, ParallelEnv
-from osh_model import cardinality, deontic_specifications, \
+from osr_model import cardinality, deontic_specifications, \
     functional_specifications, group_specifications, link, link_type, obligation, \
     organizational_model, permission, plan, plan_operator, social_preference, social_scheme, \
     structural_specifications, time_constraint_type
