@@ -3,7 +3,7 @@ import dataclasses
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Tuple, Union
 
 
 @dataclass
@@ -34,6 +34,11 @@ class constraints_integration_mode(Enum):
     PENALIZE = 1
     CORRECT_AT_POLICY = 2
 
+
+label = str
+history = List[Tuple[label, label]]
+history_pattern_str = str
+history_str = str
 
 @dataclass
 class cardinality:
