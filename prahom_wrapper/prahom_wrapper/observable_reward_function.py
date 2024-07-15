@@ -38,4 +38,17 @@ class observable_reward_function:
 
     def walk_history(self, history: history) -> float:
 
-        for label in history:
+        history = list(set(list(itertools.chain.from_iterable([[l1,l2] for l1,l2 in history]))))
+        reward = 0
+
+        i = 0
+        while i < len(history):
+            observation = history[i]
+            expected_actions = self.get_actions(observation)
+            i += 1
+            action = history[i]
+            if action in expected_actions:
+                reward += 10
+            else:
+                reward -= 10
+            i += 1
