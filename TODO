@@ -1,0 +1,19 @@
+TODO:
+  ✔ pattern
+  ✔ rules
+  ✔ custom function
+  ✔ observable_policy_constraint
+  ✔ observable_reward_function
+  ✔ time_to_live
+  ☐ constraining policy
+      ☐ CORRECT: correct chosen action in environment dynamically
+      ☐ PENALIZE: update the reward in environment dynamically
+      ☐ CORRECT_AT_POLICY: correct chosen action in policy
+        ☐ If constrained policy playable, play it get all constrained actions
+          ☐ If the initial policy's output action is one of them -> pick the intial policy's one and process the rest normally
+          ☐ Else, pick one randomly and skip saving in history, reward...
+        ☐ Else, only the initial policy should be played
+  ☐ observations_labels_manager (LLM)
+  ☐ train_under_constraints
+  ☐ predator-prey environment
+  ☐ cybORG

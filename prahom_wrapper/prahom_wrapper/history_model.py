@@ -2,8 +2,7 @@ import importlib
 
 from typing import Callable, Dict, List, Tuple, Union
 
-from actions_model import actions_manager
-from observations_model import observations_manager
+from observations_labels_manager import observations_labels_manager
 from history_graph import history_graph, observation, action, label, history, history_pattern
 
 
@@ -107,7 +106,7 @@ class history_subset_factory:
         self.hs = history_subset()
         return self
 
-    def add_pattern(self, pattern: history_pattern, observation_manager: observations_manager = None) -> 'history_subset_factory':
+    def add_pattern(self, pattern: history_pattern, observation_manager: observations_labels_manager = None) -> 'history_subset_factory':
         self.hs.add_pattern(pattern)
         return self
 
@@ -123,12 +122,8 @@ class history_subset_factory:
         self.hs.add_custom_function(custom_function)
         return self
 
-    def set_observations_manager(self, observations_manager: observations_manager) -> 'history_subset_factory':
-        self.observations_manager = observations_manager
-        return self
-
-    def set_actions_manager(self, actions_manager: actions_manager) -> 'history_subset_factory':
-        self.observations_manager = observations_manager
+    def set_observations_labels_manager(self, observations_labels_manager: observations_labels_manager) -> 'history_subset_factory':
+        self.observations_labels_manager = observations_labels_manager
         return self
 
     def create(self) -> history_subset:

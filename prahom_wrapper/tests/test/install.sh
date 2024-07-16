@@ -41,6 +41,7 @@ python marllib/patch/add_patch.py -y
 pip install pettingzoo==1.23.1
 pip install supersuit==3.9.0
 pip install pygame==2.3.0
+pip install numpy==1.23.4
 
 conda install -c conda-forge libstdcxx-ng
 pip install pyglet==1.5.11

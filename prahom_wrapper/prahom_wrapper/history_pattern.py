@@ -1,4 +1,5 @@
 import copy
+import itertools
 import random
 import re
 
@@ -215,6 +216,10 @@ class history_pattern:
         return _sample(self.history_pattern_string)
 
     def match(self, history_string: history) -> Tuple[bool, str, float, Tuple[List[str], cardinality]]:
+        if type(history_string) == list:
+            if type(history_string[0]) == tuple:
+                history_string = list(set(list(itertools.chain.from_iterable([[l1,l2] for l1,l2 in history]))))
+            history_string = ",".join(history_string)
         return _match(self.history_pattern_string, history_string)
 
 
@@ -256,17 +261,17 @@ class history_patterns:
 
 if __name__ == '__main__':
 
-    # hist_pattern = history_pattern("[0,1,2,3,[#any](0,*),4,5,6](1,1)")
+    hist_pattern = history_pattern("[0,1,2,3,[#any](0,*),4,5,6](1,1)")
 
-    # history = "0,1"
+    history = "0,1"
 
-    # match, matched, coverage, next_seq = hist_pattern.match(history)
+    match, matched, coverage, next_seq = hist_pattern.match(history)
 
-    # print(history, next_seq)
+    print(history, next_seq)
 
     # print((hist_pattern.sample()))
 
-    hp = history_patterns()
-    hp.add_pattern("[0,1,2,3,[#any](0,*),4,5,6](1,1)")
-    hp.add_pattern("[0,1,2,7,9](1,1)")
-    print(hp.get_actions("0,1,2,3,89,10,4", "5"))
+    # hp = history_patterns()
+    # hp.add_pattern("[0,1,2,3,[#any](0,*),4,5,6](1,1)")
+    # hp.add_pattern("[0,1,2,7,9](1,1)")
+    # print(hp.get_actions("0,1,2,3,89,10,4", "5"))

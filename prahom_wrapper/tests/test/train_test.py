@@ -6,16 +6,16 @@ from ray.tune import Analysis
 from pathlib import Path
 from datetime import datetime
 
-from prahom_wrapper.history_model import hs_factory
-from prahom_wrapper.osr_model import organizational_model, structural_specifications, functional_specifications, deontic_specifications, role, social_scheme, obligation
-from prahom_wrapper.prahom_wrapper.observations_model import simple_world_comm_obs_mngr
+# from prahom_wrapper.history_model import hs_factory
+# from prahom_wrapper.osr_model import organizational_model, structural_specifications, functional_specifications, deontic_specifications, role, social_scheme, obligation
+# from prahom_wrapper.prahom_wrapper.observations_labels_manager import simple_world_comm_obs_mngr
 
 # TODO:
-# hs_factory.set_observations_manager(simple_world_comm_obs_mngr)
+# hs_factory.set_observations_labels_manager(simple_world_comm_obs_mngr)
 # hs_factory.set_actions_manager(simple_world_comm_act_mngr)
 
-osr = organizational_model(structural_specifications=structural_specifications(roles={"role1": hs_factory.new().add_rules(
-    {(None, "obs1"): ["act1", "act2"]}, {}).create()}, role_inheritance_relations=None, root_groups=None), functional_specifications=functional_specifications(social_scheme=social_scheme(goals={"default_goal": hs_factory.add_pattern("[#any_obs,#any_act](0,*),obs_goal", simple_world_comm_obs_mngr.set_use_llm(False))}), social_preferences=None), deontic_specifications=deontic_specifications(obligations={obligation("role1", "default_goal"): "agent_0"}))
+# osr = organizational_model(structural_specifications=structural_specifications(roles={"role1": hs_factory.new().add_rules(
+#     {(None, "obs1"): ["act1", "act2"]}, {}).create()}, role_inheritance_relations=None, root_groups=None), functional_specifications=functional_specifications(social_scheme=social_scheme(goals={"default_goal": hs_factory.add_pattern("[#any_obs,#any_act](0,*),obs_goal", simple_world_comm_obs_mngr.set_use_llm(False))}), social_preferences=None), deontic_specifications=deontic_specifications(obligations={obligation("role1", "default_goal"): "agent_0"}))
 
 # prepare the environment academy_pass_and_shoot_with_keeper
 env = marl.make_env(environment_name="mpe",
@@ -97,9 +97,8 @@ if len(sys.argv) > 1 and sys.argv[1] == "--test":
 else:
 
     # start learning + extra experiment settings if needed. remember to check ray.yaml before use
-    # mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 20000000}, local_mode=False, num_gpus=1,
-    #           num_workers=10, share_policy='all', checkpoint_freq=500)
-    # mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 20000000}, local_mode=False, num_gpus=1,
-    #           num_workers=10, share_policy='group', checkpoint_freq=checkpoint_freq)
-    mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 20000000}, local_mode=False, num_gpus=0,
-              num_workers=1, share_policy='group', checkpoint_freq=checkpoint_freq)
+    mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 20000000}, local_mode=False, num_gpus=1,
+              num_workers=10, share_policy='group', checkpoint_freq=checkpoint_freq)
+
+    # mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 20000000}, local_mode=False, num_gpus=0,
+    #           num_workers=1, share_policy='group', checkpoint_freq=checkpoint_freq)

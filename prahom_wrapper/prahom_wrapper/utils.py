@@ -36,7 +36,7 @@ class constraints_integration_mode(Enum):
 
 
 label = str
-history = Union[List[Tuple[label, label]],List[label]]
+history = Union[List[Tuple[label, label]],List[label],str]
 history_pattern_str = str
 history_str = str
 

@@ -3,7 +3,7 @@ from history_graph import observation
 from llm_manager import llm_manager
 
 
-class observations_manager:
+class observations_labels_manager:
 
     def __init__(self, use_llm: bool = True) -> None:
         self.use_llm = use_llm
@@ -13,7 +13,7 @@ class observations_manager:
         if self.use_llm:
             self.llm_manager = llm_manager()
 
-    def map_text_description_to_observations(self, text_description: str, observations: List[observation], use_llm: bool = True, observations_identifier: str = None) -> 'observations_manager':
+    def map_text_description_to_observations(self, text_description: str, observations: List[observation], use_llm: bool = True, observations_identifier: str = None) -> 'observations_labels_manager':
         """One-to-one map a textual description to a set of observations using a regular dict and by default a LLM is prompt-engineered to learn the mapping as well.
 
         Parameters
@@ -33,7 +33,7 @@ class observations_manager:
 
         Returns
         -------
-        observations_manager
+        observations_labels_manager
             The current instance
 
         Examples
@@ -52,7 +52,7 @@ class observations_manager:
                 observations_identifier, text_description)] = observations
         return self
 
-    def add_observations_from_text_description(self, text_description: str, use_llm: bool = True) -> 'observations_manager':
+    def add_observations_from_text_description(self, text_description: str, use_llm: bool = True) -> 'observations_labels_manager':
         """Add a set of observations that match given text description.
 
         Parameters
@@ -66,7 +66,7 @@ class observations_manager:
 
         Returns
         -------
-        observations_manager
+        observations_labels_manager
             The current instance
 
         Examples
@@ -80,13 +80,13 @@ class observations_manager:
         self.use_llm = use_llm
         return self
 
-    def set_use_llm(self, use_llm) -> 'observations_manager':
+    def set_use_llm(self, use_llm) -> 'observations_labels_manager':
         self.use_llm = use_llm
         return self
 
 
-def assisted_observations_manager_create(use_llm: bool = True) -> observations_manager:
-    """Create an hand-crafted observations_manager by running an interactive assisted process
+def assisted_observations_labels_manager_create(use_llm: bool = True) -> observations_labels_manager:
+    """Create an hand-crafted observations_labels_manager by running an interactive assisted process
     consists in running a series of episodes during learning. In each episode, users have to
     describe a visual representation of agents' action for some/all frames.
 
@@ -98,7 +98,7 @@ def assisted_observations_manager_create(use_llm: bool = True) -> observations_m
 
     Returns
     -------
-    observations_manager
+    observations_labels_manager
         The current instance
 
     Examples
@@ -109,9 +109,9 @@ def assisted_observations_manager_create(use_llm: bool = True) -> observations_m
     --------
     None
     """
-    return observations_manager()
+    return observations_labels_manager()
 
 
-simple_spread_obs_mngr = observations_manager()
+simple_spread_obs_mngr = observations_labels_manager()
 
-simple_world_comm_obs_mngr = observations_manager()
+simple_world_comm_obs_mngr = observations_labels_manager()

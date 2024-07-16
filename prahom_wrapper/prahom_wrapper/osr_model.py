@@ -287,8 +287,8 @@ class obligation(deontic_specification, organizational_specification):
 
 @dataclass
 class deontic_specifications(organizational_specification):
-    permissions: Dict[permission, str]
-    obligations: Dict[obligation, str]
+    permissions: Dict[permission, List[str]]
+    obligations: Dict[obligation, List[str]]
 
     def to_dict(self) -> Dict:
         return {"permissions": {permission.__str__(): agent_name for permission, agent_name in self.permissions.items()},
@@ -298,9 +298,9 @@ class deontic_specifications(organizational_specification):
     def from_dict(d: Dict[str, Any]) -> 'deontic_specifications':
         return deontic_specifications(
             permissions={permission.from_dict(
-                p): agent_name for p, agent_name in d['permissions'].items()},
+                p): agent_names for p, agent_names in d['permissions'].items()},
             obligations={obligation.from_dict(
-                o): agent_name for o, agent_name in d['obligations'].items()}
+                o): agent_names for o, agent_names in d['obligations'].items()}
         )
 
 
@@ -459,12 +459,12 @@ if __name__ == "__main__":
             role='role_1',
             mission='mission1',
             time_constraint=time_constraint_type.ANY
-        ): "agent_1",
+        ): ["agent_1"],
         permission(
             role='role_3',
             mission='mission1',
             time_constraint=time_constraint_type.ANY
-        ): "agent_3"
+        ): ["agent_3"]
     }
     # --------------------------------------------
     # --------------------------------------------
@@ -474,7 +474,7 @@ if __name__ == "__main__":
             role='role_2',
             mission='mission2',
             time_constraint=time_constraint_type.ANY
-        ): "agent_2"
+        ): ["agent_2"]
     }
     # --------------------------------------------
 
