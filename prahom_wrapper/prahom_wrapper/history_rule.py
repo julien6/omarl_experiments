@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple
-from utils import label, history, history_pattern_str, history_str
-from history_pattern import history_pattern
+
+from prahom_wrapper.utils import label, history, history_pattern_str, history_str
+from prahom_wrapper.history_pattern import history_pattern
 
 
 class history_rules:
@@ -13,7 +14,7 @@ class history_rules:
 
     def get_actions(self, history: history_str, observation_label: label) -> List[label]:
         actions = [actions for hist_obs, actions in self.rules.items() if history_pattern(
-            hist_obs[0]).match(history)[0] and hist_obs[1] == observation_label]
+            hist_obs[0]).match(history, observation_label)[0] and hist_obs[1] == observation_label]
         return actions[0] if len(actions) > 0 else None
 
 

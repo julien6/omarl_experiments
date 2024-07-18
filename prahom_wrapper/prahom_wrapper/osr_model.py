@@ -5,9 +5,9 @@ import dataclasses
 from enum import Enum
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
-from utils import cardinality
 
-from history_model import history_subset, hs_factory
+from prahom_wrapper.utils import cardinality
+from prahom_wrapper.history_model import history_subset, hs_factory
 
 INFINITY = 'INFINITY'
 

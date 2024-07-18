@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple
-from history_graph import observation
-from llm_manager import llm_manager
+
+from prahom_wrapper.history_graph import observation
+from prahom_wrapper.llm_manager import llm_manager
 
 
 class observations_labels_manager:

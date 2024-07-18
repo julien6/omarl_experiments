@@ -19,15 +19,15 @@ from custom_envs.movingcompany import moving_company_v0
 
 
 from custom_envs.movingcompany import moving_company_v0
-from prahom_wrapper.prahom_wrapper import prahom_wrapper
+from prahom_wrapper.prahom_wrapper import _prahom_wrapper
 env = moving_company_v0.parallel_env(render_mode="human")
 
-hist_to_specs = lambda hist: {"role": "horizontal_mover"} if "3" in [
-    act for obs, act in hist.items()] else None
-agt_to_cons_specs = {"agent_0": {"[0 5 0 0 2 0 0 1 0]": 5}}
-env = prahom_wrapper(env, hist_to_specs, agt_to_cons_specs, "CORRECT", ["sequence_clustering"], ["role", "plan"], ["dendogram", "PCA"])
-env.train("PPO_default")
-raw_specs, agent_to_specs = env.generate_specs()
+# hist_to_specs = lambda hist: {"role": "horizontal_mover"} if "3" in [
+#     act for obs, act in hist.items()] else None
+# agt_to_cons_specs = {"agent_0": {"[0 5 0 0 2 0 0 1 0]": 5}}
+# env = prahom_wrapper(env, hist_to_specs, agt_to_cons_specs, "CORRECT", ["sequence_clustering"], ["role", "plan"], ["dendogram", "PCA"])
+# env.train("PPO_default")
+# raw_specs, agent_to_specs = env.generate_specs()
 
 
 class TrainTestManager:

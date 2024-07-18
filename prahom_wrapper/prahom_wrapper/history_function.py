@@ -3,8 +3,9 @@ import inspect
 
 import itertools
 from typing import Callable, Dict, List, Tuple
-from utils import label, history, history_str
-from history_pattern import history_pattern
+
+from prahom_wrapper.utils import label, history, history_str
+from prahom_wrapper.history_pattern import history_pattern
 
 
 class history_functions:
@@ -43,8 +44,12 @@ class history_functions:
     def get_actions(self, history: history_str, observation_label: label) -> List[label]:
         actions = []
         for custom_function in self.custom_functions:
-            actions += [self.load_function(custom_function)
-                        (history.split(","), observation_label)]
+            act = self.load_function(custom_function)(history.split(
+                ",") if history is not None else None, observation_label)
+            if act is None:
+                return None
+            else:
+                actions += [act]
 
         return list(set(list(itertools.chain.from_iterable(actions))))
 

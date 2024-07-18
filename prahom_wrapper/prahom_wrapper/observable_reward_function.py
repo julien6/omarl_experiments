@@ -1,9 +1,10 @@
 import itertools
 from typing import Callable, List, Tuple
-from history_function import history_functions
-from history_rule import history_rules
-from utils import label, history, history_pattern_str
-from history_pattern import history_pattern, history_patterns
+
+from prahom_wrapper.history_function import history_functions
+from prahom_wrapper.history_rule import history_rules
+from prahom_wrapper.utils import label, history, history_pattern_str
+from prahom_wrapper.history_pattern import history_pattern, history_patterns
 
 MATCH_REWARD = 100
 COVERAGE_REWARD = 10

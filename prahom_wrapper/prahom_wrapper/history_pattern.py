@@ -3,8 +3,9 @@ import itertools
 import random
 import re
 
-from typing import List, Tuple
-from utils import cardinality, history, label, history_pattern_str, history_str
+from typing import List, Tuple, Union
+
+from prahom_wrapper.utils import cardinality, history, label, history_pattern_str, history_str
 
 
 MAX_OCCURENCE = 10
@@ -129,6 +130,9 @@ def _sample(pattern_string: str):
 
 def _match(pattern_string, string):
 
+    global not_finished
+    not_finished = False
+
     def match_aux(history_tuples, call_num, length, max_length):
 
         if _is_only_labels(history_tuples):
@@ -204,7 +208,78 @@ def _match(pattern_string, string):
         next_expected_sequence = (next_expected_sequence[0], cardinality(
             next_expected_sequence[1][0], next_expected_sequence[1][1]))
 
-    return is_matched, matched, float(length / overall_length), next_expected_sequence
+    next_actions = []
+
+    next_action = None
+    if next_expected_sequence is not None:
+        expected_next_sequence = next_expected_sequence[0]
+        matched_sequence = matched.split(",")
+
+        next_action = None
+        for i in range(0, len(expected_next_sequence)):
+            e = expected_next_sequence[:len(expected_next_sequence)-i]
+            m = matched_sequence[len(
+                matched_sequence)-len(e):len(matched_sequence)]
+            if m == e:
+                next_action = expected_next_sequence[len(
+                    expected_next_sequence)-i]
+        if next_action is None:
+            next_action = expected_next_sequence[0]
+    if next_action is not None:
+        next_actions += [next_action]
+
+    return is_matched, matched, float(length / overall_length), next_actions
+
+
+not_finished = False
+
+
+def _match2(pattern_string, string):
+
+    global not_finished
+    not_finished = False
+
+    # def match_aux(history_tuples, not_finished):
+    def match_aux(history_tuples):
+
+        if _is_only_labels(history_tuples):
+            seq, card = history_tuples
+
+            next_matched_obs_seq = [
+                seq[i+1] if i < len(seq)-1 else None for i in range(0, len(seq)) if seq[i] == string]
+
+            global not_finished
+            if not_finished:
+                next_matched_obs_seq = [seq[0]] + next_matched_obs_seq
+
+            not_finished = len(
+                next_matched_obs_seq) > 0 and next_matched_obs_seq[-1] is None
+
+            return next_matched_obs_seq
+
+        else:
+            seq, card = history_tuples
+
+            next_expected_matched_obs = []
+
+            for sub_seq in seq:
+
+                next_expc_obs = match_aux(sub_seq)
+
+                if len(next_expected_matched_obs) > 0 and next_expected_matched_obs[-1] is None:
+                    next_expected_matched_obs.pop()
+
+                next_expected_matched_obs += next_expc_obs
+
+            return next_expected_matched_obs
+
+    # next_expected_obs_sequence = match_aux(_parse_into_tuple(pattern_string), False)
+    next_expected_obs_sequence = match_aux(_parse_into_tuple(pattern_string))
+
+    if None in next_expected_obs_sequence:
+        next_expected_obs_sequence.remove(None)
+
+    return len(next_expected_obs_sequence) > 0, None, None, next_expected_obs_sequence
 
 
 class history_pattern:
@@ -215,12 +290,18 @@ class history_pattern:
     def sample(self) -> str:
         return _sample(self.history_pattern_string)
 
-    def match(self, history_string: history) -> Tuple[bool, str, float, Tuple[List[str], cardinality]]:
-        if type(history_string) == list:
-            if type(history_string[0]) == tuple:
-                history_string = list(set(list(itertools.chain.from_iterable([[l1,l2] for l1,l2 in history]))))
-            history_string = ",".join(history_string)
-        return _match(self.history_pattern_string, history_string)
+    def match(self, history_string: Union[history, None], observation_label: label) -> Tuple[bool, str, float, List[str]]:
+        if history_string is not None:
+            if type(history_string) == list:
+                if type(history_string[0]) == tuple:
+                    history_string = list(
+                        set(list(itertools.chain.from_iterable([[l1, l2] for l1, l2 in history]))))
+                history_string = ",".join(
+                    history_string)
+            history_string += f',{observation_label}'
+            return _match(self.history_pattern_string, history_string)
+        else:
+            return _match2(self.history_pattern_string, observation_label)
 
 
 class history_patterns:
@@ -231,47 +312,37 @@ class history_patterns:
     def add_pattern(self, history_pattern_string: history_pattern_str) -> None:
         self.patterns += [history_pattern(history_pattern_string)]
 
-    def get_actions(self, history: history_str, observation_label: label) -> List[label]:
+    def get_actions(self, history: Union[history_str, None], observation_label: label) -> List[label]:
         actions = []
         for pattern in self.patterns:
-            match, matched, coverage, next_seq = pattern.match(
-                history + f',{observation_label}')
-
-            next_action = None
-            if next_seq is not None:
-                expected_next_sequence = next_seq[0]
-                matched_sequence = matched.split(",")
-
-                next_action = None
-                for i in range(0, len(expected_next_sequence)):
-                    e = expected_next_sequence[:len(expected_next_sequence)-i]
-                    m = matched_sequence[len(
-                        matched_sequence)-len(e):len(matched_sequence)]
-                    if m == e:
-                        # print(e, m, i)
-                        next_action = expected_next_sequence[len(
-                            expected_next_sequence)-i]
-
-                if next_action is None and match:
-                    next_action = expected_next_sequence[0]
-            if next_action is not None:
-                actions += [next_action]
+            match, matched, coverage, next_actions = pattern.match(
+                history, observation_label)
+            if next_actions:
+                actions += next_actions
         return actions
 
 
 if __name__ == '__main__':
 
-    hist_pattern = history_pattern("[0,1,2,3,[#any](0,*),4,5,6](1,1)")
+    # hist_pattern = history_pattern("[0,1,2,3,[#any](0,*),4,5,6](1,1)")
 
-    history = "0,1"
+    # history = "0,1"
 
-    match, matched, coverage, next_seq = hist_pattern.match(history)
+    # match, matched, coverage, next_seq = hist_pattern.match(history)
 
-    print(history, next_seq)
+    # print(history, next_seq)
 
     # print((hist_pattern.sample()))
 
-    # hp = history_patterns()
-    # hp.add_pattern("[0,1,2,3,[#any](0,*),4,5,6](1,1)")
-    # hp.add_pattern("[0,1,2,7,9](1,1)")
+    hp = history_patterns()
+    hp.add_pattern("[0,1,2,3,[#any](0,*),4,5,6](1,1)")
+    hp.add_pattern("[0,1,2,7,9](1,1)")
     # print(hp.get_actions("0,1,2,3,89,10,4", "5"))
+    print(hp.get_actions("0,1", "2"))
+
+    # print(_match("[[0,1](1,1),[[2,3,4](1,2),6,7,8](1,1)](1,1)", "0"))
+    # _match2("[0,[1,2](1,1),[[[4,6](0,1),9,7](1,1),8,2,2,2,4](2,2)](1,1)", "2")
+
+    # history_patt = history_pattern(
+    #     "[0,[1,2](1,1),3](1,1)")
+    # print(history_patt.match("0,1", "2"))

@@ -122,9 +122,7 @@ class RLlibMPE(MultiAgentEnv):
         return obs
 
     def step(self, action_dict):
-        print("==> actions: ", action_dict)
         o, r, d, info = self.env.step(action_dict)
-        print("==> ", o, r, d, info)
         rewards = {}
         obs = {}
         for key in action_dict.keys():

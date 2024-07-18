@@ -1,37 +1,40 @@
 import sys
 import os
+from typing import List
 
 from marllib import marl
 from ray.tune import Analysis
 from pathlib import Path
 from datetime import datetime
 
-# from prahom_wrapper.history_model import hs_factory
-# from prahom_wrapper.osr_model import organizational_model, structural_specifications, functional_specifications, deontic_specifications, role, social_scheme, obligation
-# from prahom_wrapper.prahom_wrapper.observations_labels_manager import simple_world_comm_obs_mngr
+from action_constrain_wrapper import RLlibMPE_action_wrapper, make_env
+from marllib.envs.base_env import ENV_REGISTRY
+from marllib.marl import register_env
 
-# TODO:
-# hs_factory.set_observations_labels_manager(simple_world_comm_obs_mngr)
-# hs_factory.set_actions_manager(simple_world_comm_act_mngr)
+from marllib.envs.base_env.mpe import REGISTRY
+from ray.tune.registry import _global_registry
+from prahom_wrapper.observable_policy_constraint import observable_policy_constraint
+from prahom_wrapper.utils import label, history
 
-# osr = organizational_model(structural_specifications=structural_specifications(roles={"role1": hs_factory.new().add_rules(
-#     {(None, "obs1"): ["act1", "act2"]}, {}).create()}, role_inheritance_relations=None, root_groups=None), functional_specifications=functional_specifications(social_scheme=social_scheme(goals={"default_goal": hs_factory.add_pattern("[#any_obs,#any_act](0,*),obs_goal", simple_world_comm_obs_mngr.set_use_llm(False))}), social_preferences=None), deontic_specifications=deontic_specifications(obligations={obligation("role1", "default_goal"): "agent_0"}))
 
-# prepare the environment academy_pass_and_shoot_with_keeper
-env = marl.make_env(environment_name="mpe",
-                    map_name="simple_world_comm", force_coop=False)
+opc = observable_policy_constraint()
 
-# can add extra env params. remember to check env configuration before use
-# env = marl.make_env(environment_name='smac', map_name='3m', difficulty="6", reward_scale_rate=15)
+
+def manual_next_action(history: history, observation_label: label) -> List[label]:
+    import random
+    # return [1, 2] if random.random() < 0.25 else [3, 1] if random.random() < 0.25 else [0]
+    return [1,2] if random.random() < 0.2 else None
+
+opc.add_custom_function(manual_next_action)
+
+
+env = make_env(environment_name="mpe",
+               map_name="simple_world_comm", force_coop=False, opc=opc)
+
 
 # initialize algorithm and load hyperparameters
 mappo = marl.algos.mappo(hyperparam_source="mpe")
 
-# TODO
-# mappo = constrain_wrapper(mappo)
-
-# can add extra algorithm params. remember to check algo_config hyperparams before use
-# mappo = marl.algos.MAPPO(hyperparam_source='common', use_gae=True,  batch_episode=10, kl_coeff=0.2, num_sgd_iter=3)
 
 # build agent model based on env + algorithms + user preference if checked available
 model = marl.build_model(
@@ -50,7 +53,7 @@ if len(sys.argv) > 1 and sys.argv[1] == "--test":
     map_name = env[1]["env_args"]["map_name"]
     arch = model[1]["model_arch_args"]["core_arch"]
     running_directory = '_'.join([algorithm, arch, map_name])
-    running_directory = f"exp_results/{running_directory}"
+    running_directory = f"./exp_results/{running_directory}"
 
     if (os.path.exists(running_directory)):
 

@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import re
 
 from typing import Any, Dict, List, Tuple, Union
-from utils import cardinality, draw_networkx_edge_labels
+
+from prahom_wrapper.utils import cardinality, draw_networkx_edge_labels
 
 observation = Any
 action = Any

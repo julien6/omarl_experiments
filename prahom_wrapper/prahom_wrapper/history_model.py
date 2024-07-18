@@ -2,8 +2,8 @@ import importlib
 
 from typing import Callable, Dict, List, Tuple, Union
 
-from observations_labels_manager import observations_labels_manager
-from history_graph import history_graph, observation, action, label, history, history_pattern
+from prahom_wrapper.observations_labels_manager import observations_labels_manager
+from prahom_wrapper.history_graph import history_graph, observation, action, label, history, history_pattern
 
 
 class history_subset:

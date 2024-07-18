@@ -1,10 +1,11 @@
 import itertools
 from typing import Callable, Dict, List, Tuple, Union
-from history_function import history_functions
-from history_rule import history_rules
-from osr_model import deontic_specifications, organizational_model, time_constraint_type, obligation, permission
-from utils import label, history, history_pattern_str
-from history_pattern import history_pattern, history_patterns
+
+from prahom_wrapper.history_function import history_functions
+from prahom_wrapper.history_rule import history_rules
+from prahom_wrapper.osr_model import deontic_specifications, organizational_model, time_constraint_type, obligation, permission
+from prahom_wrapper.utils import label, history, history_pattern_str
+from prahom_wrapper.history_pattern import history_pattern, history_patterns
 
 
 class deontic_specifications_ttl:
