@@ -39,11 +39,7 @@ class RLlibMPE_action_wrapper(RLlibMPE):
                 obs = self.last_observation_dict[agent]
 
                 if "obs" in list(obs.keys()):
-                    obs = str(obs["obs"])
-
-                    home = expanduser("~") + "/observations"
-                    with open(home, 'a+') as file:
-                        file.write(agent + "\n" + obs + '\n\n' + '='*15 + '\n')
+                    obs = obs["obs"]
 
                 modified_actions[agent] = {}
                 mapped_actions = self.opc.get_actions(None,obs)

@@ -22,8 +22,9 @@ opc = observable_policy_constraint()
 
 def manual_next_action(history: history, observation_label: label) -> List[label]:
     import random
+    # print(observation_label, "\n\n")
     # return [1, 2] if random.random() < 0.25 else [3, 1] if random.random() < 0.25 else [0]
-    return [1,2] if random.random() < 0.2 else None
+    return [1] if random.random() < 0.8 else None
 
 opc.add_custom_function(manual_next_action)
 

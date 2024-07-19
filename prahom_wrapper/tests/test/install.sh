@@ -47,6 +47,7 @@ conda install -c conda-forge libstdcxx-ng
 pip install pyglet==1.5.11
 
 pip install marllib
+pip install numpy==1.23.4
 EOT
 
 echo -e "\n\nINSTALLATION ON INTERFACE LOCAL MACHINE\n"

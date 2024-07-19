@@ -29,8 +29,7 @@ concat_array_good = np.array([-1.68750000e-01,  2.08593938e-49,  8.25382657e-02,
                                0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
                                1.00000000e+00, -1.00000000e+00,  0.00000000e+00,  0.00000000e+00])
 
-# Calcul des tailles pour sizes_leader
-sizes_leader = {
+normal_leader_adversary_sizes = {
     'self_vel': 2,
     'self_pos': 2,
     'landmark_rel_positions': 10,
@@ -40,19 +39,7 @@ sizes_leader = {
     'leader_comm': 4
 }
 
-# Calcul des tailles pour sizes_normal
-sizes_normal = {
-    'self_vel': 2,
-    'self_pos': 2,
-    'landmark_rel_positions': 10,
-    'other_agent_rel_positions': 10,
-    'other_agent_velocities': 4,
-    'self_in_forest': 2,
-    'leader_comm': 4
-}
-
-# Calcul des tailles pour sizes_good
-sizes_good = {
+good_sizes = {
     'self_vel': 2,
     'self_pos': 2,
     'landmark_rel_positions': 10,
@@ -71,9 +58,9 @@ def extract_values(concat_array, sizes):
     return extracted_values
 
 # Extraction des valeurs pour chaque type de tailles
-extracted_values_leader = extract_values(concat_array_leader, sizes_leader)
-extracted_values_normal = extract_values(concat_array_normal, sizes_normal)
-extracted_values_good = extract_values(concat_array_good, sizes_good)
+extracted_values_leader = extract_values(concat_array_leader, normal_leader_adversary_sizes)
+extracted_values_normal = extract_values(concat_array_normal, normal_leader_adversary_sizes)
+extracted_values_good = extract_values(concat_array_good, good_sizes)
 
 # Affichage des résultats
 print("Extracted values for sizes_leader:")
