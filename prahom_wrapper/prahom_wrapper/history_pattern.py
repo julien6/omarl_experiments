@@ -3,9 +3,9 @@ import itertools
 import random
 import re
 
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
-from prahom_wrapper.utils import cardinality, history, label, history_pattern_str, history_str
+from prahom_wrapper.utils import COVERAGE_REWARD, MATCH_REWARD, cardinality, history, label, history_pattern_str, history_str
 
 
 MAX_OCCURENCE = 10
@@ -298,10 +298,16 @@ class history_pattern:
                         set(list(itertools.chain.from_iterable([[l1, l2] for l1, l2 in history]))))
                 history_string = ",".join(
                     history_string)
-            history_string += f',{observation_label}'
+            if observation_label is not None:
+                history_string += f',{observation_label}'
             return _match(self.history_pattern_string, history_string)
         else:
+            if observation_label is None:
+                raise Exception("observation should not be None")
             return _match2(self.history_pattern_string, observation_label)
+
+    def to_dict(self) -> Dict:
+        return self.history_pattern_string
 
 
 class history_patterns:
@@ -312,7 +318,7 @@ class history_patterns:
     def add_pattern(self, history_pattern_string: history_pattern_str) -> None:
         self.patterns += [history_pattern(history_pattern_string)]
 
-    def get_actions(self, history: Union[history_str, None], observation_label: label) -> List[label]:
+    def get_actions(self, history: Union[history_str, None], observation_label: label, agent_name: str = None) -> List[label]:
         actions = []
         for pattern in self.patterns:
             match, matched, coverage, next_actions = pattern.match(
@@ -320,6 +326,35 @@ class history_patterns:
             if next_actions:
                 actions += next_actions
         return actions
+
+    def get_reward(self, history: history_str) -> float:
+
+        if type(history) == list:
+            if len(history) > 0 and type(history[0]) == tuple:
+                history = list(
+                    set(list(itertools.chain.from_iterable([[l1, l2] for l1, l2 in history]))))
+            history = ",".join(history)
+        if len(history.split(",")) % 2 == 1:
+            raise Exception(
+                "History should have full (observation, action) couples")
+
+        reward = 0
+
+        for pattern in self.patterns:
+            match, matched, coverage, next_seq = pattern.match(history, None)
+            if match:
+                return MATCH_REWARD
+            else:
+                if coverage is not None:
+                    reward += (2*coverage - 1) * COVERAGE_REWARD
+
+        reward -= MATCH_REWARD
+
+    def to_dict(self) -> Dict:
+        return [p.to_dict() for p in self.patterns]
+
+    def from_dict(self, data: Dict) -> None:
+        self.patterns = [history_pattern(p) for p in data]
 
 
 if __name__ == '__main__':

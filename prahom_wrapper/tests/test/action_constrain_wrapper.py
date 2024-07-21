@@ -1,5 +1,6 @@
+import itertools
 import random
-from typing import Dict
+from typing import Dict, Union
 from marllib.envs.base_env.mpe import RLlibMPE
 from marllib.marl.common import dict_update, get_model_config, check_algo_type, \
     recursive_dict_update
@@ -20,52 +21,83 @@ import os
 import sys
 
 from prahom_wrapper.observable_policy_constraint import observable_policy_constraint
+from prahom_wrapper.osr_model import obligation, organizational_model, permission
+from prahom_wrapper.deontic_specifications_ttl import deontic_specifications_ttl
+from prahom_wrapper.utils import OBLIGATION_REWARD_FACTOR
+
 
 class RLlibMPE_action_wrapper(RLlibMPE):
 
-    def __init__(self, env: RLlibMPE, observable_policy_constraint: observable_policy_constraint = None, bonus: int = 10, malus: int = -10):
+    def __init__(self, env: RLlibMPE, organizational_model: organizational_model = None, bonus: int = 10, malus: int = -10):
         self.env = env
-        self.opc = observable_policy_constraint
+        self.organizational_model = organizational_model
+        self.deontic_specifications_ttl = deontic_specifications_ttl(
+            organizational_model)
         self.bonus = bonus
         self.malus = malus
         self.last_observation_dict = {}
+        self.histories = {agent: [] for agent in self.agents}
 
     def step(self, action_dict):
 
-        modified_actions = deepcopy(action_dict)
+        corrected_actions = deepcopy(action_dict)
+        reward_corrections = {
+            agent_name: 0 for agent_name in list(action_dict.keys())}
         for agent, action in action_dict.items():
 
-            if self.opc is not None:
+            if self.organizational_model is not None:
+
                 obs = self.last_observation_dict[agent]
 
                 if "obs" in list(obs.keys()):
                     obs = obs["obs"]
 
-                modified_actions[agent] = {}
-                mapped_actions = self.opc.get_actions(None,obs)
+                obligations = []
+                permissions = []
+                if self.organizational_model.deontic_specifications.obligations is not None:
+                    obligations = [obligation for obligation, agent_names in self.organizational_model.deontic_specifications.obligations.items(
+                    ) if agent in agent_names]
+                if self.organizational_model.deontic_specifications.permissions is not None:
+                    permissions = [permission for permission, agent_names in self.organizational_model.deontic_specifications.permissions.items(
+                    ) if agent in agent_names]
+
+                if len(set([d.role for d in obligations+permissions])) != 1:
+                    raise Exception(
+                        "An agent should be mapped to one role")
+
+                # Dealing with the associated role
+                role = obligations[0].role
+                opc = self.organizational_model.structural_specifications.roles[role]
+                mapped_actions = opc.get_actions(self.histories[agent], obs, agent)
                 if mapped_actions is not None and len(mapped_actions) > 0:
-                    mapped_actions = random.choice(mapped_actions)
-                    modified_actions[agent] = mapped_actions
-                else:
-                    modified_actions[agent] = action
+                    mapped_action = random.choice(mapped_actions)
+                    corrected_actions[agent] = mapped_action
+
+                self.histories.setdefault(agent, [])
+                # TODO: remove the str after label <-> obs established
+                self.histories[agent] += [str(obs),
+                                          str(corrected_actions[agent])]
+
+                # Dealing with the associated missions
+                for ds in obligations+permissions:
+                    mission = ds.mission
+                    if mission is None:
+                        continue
+                    orfs = list(
+                        set(list(itertools.chain.from_iterable([[sch.goals[goal] for goal in sch.mission_to_goals[mission]] for sch_tag,
+                            sch in self.organizational_model.functional_specifications.social_scheme.items() if mission in sch.missions]))))
+                    reward_corrections[agent] = (OBLIGATION_REWARD_FACTOR if type(
+                        ds) == obligation else 1) * sum([x if x is not None else 0 for x in [o.reward(self.histories[agent]) for o in orfs]])
+
+        if self.organizational_model is not None:
+            self.deontic_specifications_ttl.decrease()
+            self.organizational_model = self.deontic_specifications_ttl.osr_model
 
         # Take a step in the environment with modified actions
-        obs, rewards, dones, info = self.env.step(modified_actions)
+        obs, rewards, dones, info = self.env.step(corrected_actions)
 
-        # Modify rewards based on the action taken
-        # for agent, action in action_dict.items():
-        #     obs = self.last_observation_dict[agent]
-
-        #     if "obs" in list(obs.keys()):
-        #         obs = str(obs["obs"])
-
-        #     if self.opc.get(obs, None) is not None:
-        #         mapped_action = self.opc[obs]
-        #         if mapped_action == action:
-        #             rewards[agent] += self.bonus
-        #         else:
-        #             pass
-        #             #rewards[agent] += self.malus
+        rewards = {agent_name: reward + reward_corrections.get(agent_name, 0)
+                   for agent_name, reward in rewards.items()}
 
         self.last_observation_dict = obs
 
@@ -119,7 +151,7 @@ def make_env(
         environment_name: str,
         map_name: str,
         force_coop: bool = False,
-        opc: observable_policy_constraint = None,
+        organizational_model: organizational_model = None,
         **env_params
 ) -> Tuple[MultiAgentEnv, Dict]:
     """
@@ -194,11 +226,11 @@ def make_env(
 
     if env_config["force_coop"]:
         register_env(env_reg_name, lambda _: RLlibMPE_action_wrapper(
-            COOP_ENV_REGISTRY[env_config["env"]](env_config["env_args"]), opc))
+            COOP_ENV_REGISTRY[env_config["env"]](env_config["env_args"]), organizational_model))
         env = COOP_ENV_REGISTRY[env_config["env"]](env_config["env_args"])
     else:
         register_env(env_reg_name, lambda _: RLlibMPE_action_wrapper(
-            ENV_REGISTRY[env_config["env"]](env_config["env_args"]), opc))
+            ENV_REGISTRY[env_config["env"]](env_config["env_args"]), organizational_model))
         env = ENV_REGISTRY[env_config["env"]](env_config["env_args"])
 
     return env, env_config

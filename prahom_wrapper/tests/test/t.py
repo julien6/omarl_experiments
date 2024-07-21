@@ -74,3 +74,6 @@ for key, value in extracted_values_normal.items():
 print("\nExtracted values for sizes_good:")
 for key, value in extracted_values_good.items():
     print(f"{key}: {value}")
+
+def convert_to_absolute_position(data):
+    

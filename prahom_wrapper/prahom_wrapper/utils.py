@@ -5,6 +5,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Tuple, Union
 
+MATCH_REWARD = 100
+COVERAGE_REWARD = 10
+
+OBLIGATION_REWARD_FACTOR = 10
 
 @dataclass
 class kosia_configuration:

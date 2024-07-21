@@ -6,15 +6,18 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
+from prahom_wrapper.observable_reward_function import observable_reward_function
 from prahom_wrapper.utils import cardinality
-from prahom_wrapper.history_model import history_subset, hs_factory
+from prahom_wrapper.observable_policy_constraint import observable_policy_constraint
 
 INFINITY = 'INFINITY'
 
 
 class os_encoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, history_subset):
+        if isinstance(o, observable_policy_constraint):
+            return o.to_dict()
+        if isinstance(o, observable_reward_function):
             return o.to_dict()
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
@@ -110,14 +113,14 @@ class group_specifications(organizational_specification):
 
 @dataclass
 class structural_specifications(organizational_specification):
-    roles: Dict[role, history_subset]
+    roles: Dict[role, observable_policy_constraint]
     role_inheritance_relations: Dict[role, List[role]]
     root_groups: Dict[group_tag, group_specifications]
 
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'structural_specifications':
         return structural_specifications(
-            roles={role(r): history_subset.from_dict(hs)
+            roles={role(r): observable_policy_constraint.from_dict(hs)
                    for r, hs in d['roles'].items()},
             role_inheritance_relations={role(
                 k): [role(r) for r in v] for k, v in d['role_inheritance_relations'].items()},
@@ -159,7 +162,7 @@ class plan(organizational_specification):
 
 @dataclass
 class social_scheme(organizational_specification):
-    goals: Dict[goal, history_subset]
+    goals: Dict[goal, observable_reward_function]
     missions: List[mission]
     goals_structure: plan
     mission_to_goals: Dict[mission, List[goal]]
@@ -169,7 +172,7 @@ class social_scheme(organizational_specification):
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'social_scheme':
         return social_scheme(
-            goals={goal(g): history_subset.from_dict(hs)
+            goals={goal(g): observable_reward_function.from_dict(hs)
                    for g, hs in d['goals'].items()},
             missions=[mission(m) for m in d['missions']],
             goals_structure=plan.from_dict(d['goals_structure']),
@@ -306,9 +309,9 @@ class deontic_specifications(organizational_specification):
 
 @dataclass
 class organizational_model:
-    structural_specifications: structural_specifications
-    functional_specifications: functional_specifications
-    deontic_specifications: deontic_specifications
+    structural_specifications: 'structural_specifications'
+    functional_specifications: 'functional_specifications'
+    deontic_specifications: 'deontic_specifications'
 
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'organizational_model':
@@ -326,6 +329,11 @@ class organizational_model:
 
     def convert_to_obj(self, os_label: str) -> 'organizational_model':
         return organizational_model.from_dict(json.loads(os_label))
+
+    def to_dict(self) -> Dict:
+        ds = self.deontic_specifications.to_dict()
+        self.deontic_specifications = ds
+        return json.loads(json.dumps(self, indent=4, cls=os_encoder))
 
 
 if __name__ == "__main__":
@@ -382,8 +390,8 @@ if __name__ == "__main__":
     # --------------------------------------------
 
     structural_specs = structural_specifications(
-        roles={'role_1': hs_factory.new().create(
-        ), 'role_2': hs_factory.new().create()},
+        roles={'role_1': observable_policy_constraint().add_pattern(
+            ""), 'role_2': observable_policy_constraint().add_pattern("")},
         role_inheritance_relations=role_inheritance_relations,
         root_groups={"group1": group1}
     )
@@ -394,8 +402,8 @@ if __name__ == "__main__":
 
     # --------------------------------------------
     # Instantiate the social schemes
-    goals = {'goal1': hs_factory.new().create(), 'goal2': hs_factory.new(
-    ).create(), 'goal3': hs_factory.new().create()}
+    goals = {'goal1': observable_reward_function().add_pattern(""), 'goal2': observable_reward_function(
+    ).add_pattern(""), 'goal3': observable_reward_function().add_pattern("")}
     missions = ['mission1', 'mission2']
     goals_structure = plan(
         goal='goal1',
@@ -492,18 +500,15 @@ if __name__ == "__main__":
     )
     ############################################
 
-    print(org_model)
+    # print(org_model)
     om = copy.deepcopy(org_model)
+    print(om)
 
     print("="*30)
 
-    ds = org_model.deontic_specifications.to_dict()
-    del org_model.__dict__["deontic_specifications"]
-    org_model.__dict__["deontic_specifications"] = ds
-    print(org_model)
-
-    json.dump(org_model, open("organizational_model1.json", "w"),
-              indent=4, cls=os_encoder)
+    om_dict = om.to_dict()
+    # print(om_dict)
+    json.dump(om_dict, open("organizational_model1.json", "w+"), indent=4)
 
     print("="*30)
 
@@ -511,6 +516,10 @@ if __name__ == "__main__":
         json.load(open("organizational_model1.json")))
 
     print(os1)
+
+    om_dict1 = os1.to_dict()
+
+    print(om_dict == om_dict1)
 
     # json.dump(dataclasses.asdict(os1), open("organizational_model2.json", "w"),
     #           indent=4, cls=os_encoder)

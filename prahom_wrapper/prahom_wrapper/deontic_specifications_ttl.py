@@ -14,23 +14,25 @@ class deontic_specifications_ttl:
         self.osr_model = osr_model
         self.ttl: Dict[str, Dict[Union[obligation, permission], Dict[str, int]]] = {
             "obligations": {}, "permissions": {}}
-        for obl in osr_model.deontic_specifications.obligations:
-            if self.ttl["obligations"].get(obl, None) == None:
-                self.ttl["obligations"].setdefault(obl, {})
-            for agent_name in osr_model.deontic_specifications.obligations[obl]:
-                if self.ttl["obligations"][obl].get(agent_name, None) == None:
-                    self.ttl["obligations"][obl].setdefault(agent_name, {})
-                self.ttl["obligations"][obl][agent_name] = self.tc_to_time_unit(
-                    obl.time_constraint)
+        if osr_model.deontic_specifications.obligations is not None:
+            for obl in osr_model.deontic_specifications.obligations:
+                if self.ttl["obligations"].get(obl, None) == None:
+                    self.ttl["obligations"].setdefault(obl, {})
+                for agent_name in osr_model.deontic_specifications.obligations[obl]:
+                    if self.ttl["obligations"][obl].get(agent_name, None) == None:
+                        self.ttl["obligations"][obl].setdefault(agent_name, {})
+                    self.ttl["obligations"][obl][agent_name] = self.tc_to_time_unit(
+                        obl.time_constraint)
 
-        for perm in osr_model.deontic_specifications.permissions:
-            if self.ttl["permissions"].get(perm, None) == None:
-                self.ttl["permissions"].setdefault(perm, {})
-            for agent_name in osr_model.deontic_specifications.permissions[perm]:
-                if self.ttl["permissions"][perm].get(agent_name, None) == None:
-                    self.ttl["permissions"][perm].setdefault(agent_name, {})
-                self.ttl["permissions"][perm][agent_name] = self.tc_to_time_unit(
-                    perm.time_constraint)
+        if osr_model.deontic_specifications.permissions is not None:
+            for perm in osr_model.deontic_specifications.permissions:
+                if self.ttl["permissions"].get(perm, None) == None:
+                    self.ttl["permissions"].setdefault(perm, {})
+                for agent_name in osr_model.deontic_specifications.permissions[perm]:
+                    if self.ttl["permissions"][perm].get(agent_name, None) == None:
+                        self.ttl["permissions"][perm].setdefault(agent_name, {})
+                    self.ttl["permissions"][perm][agent_name] = self.tc_to_time_unit(
+                        perm.time_constraint)
 
     def tc_to_time_unit(self,  time_constraint: Union[time_constraint_type, str]):
         if type(time_constraint) == time_constraint_type:
