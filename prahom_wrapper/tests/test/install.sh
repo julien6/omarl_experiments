@@ -52,9 +52,9 @@ pip install marllib
 pip install numpy==1.23.4
 EOT
 
-echo -e "\n\nINSTALLATION ON INTERFACE LOCAL MACHINE\n"
+# echo -e "\n\nINSTALLATION ON INTERFACE LOCAL MACHINE\n"
 chmod +x tmp_install.sh
-./tmp_install.sh
+# ./tmp_install.sh
 
 # if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
 #     echo -e "\n\nINSTALLATION ON COMPUTATIONAL REMOTE SERVER\n"
@@ -66,8 +66,8 @@ chmod +x tmp_install.sh
 
 if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
     echo -e "\n\nINSTALLATION ON COMPUTATIONAL REMOTE SERVER\n"
-    ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; rm -rf omarl_experiments ; git clone https://github.com/julien6/omarl_experiments.git ; cd omarl_experiments ; git checkout"
-    rsync -avxH tmp_install.sh soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/
+    ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; rm -rf omarl_experiments ; git clone https://github.com/julien6/omarl_experiments.git ; cd omarl_experiments ; git checkout test ; cd prahom_wrapper/tests/test"
+    rsync -avxH tmp_install.sh soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/prahom_wrapper/tests/test
     rm -rf tmp_install.sh
-    ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments ; ./tmp_install.sh ; rm -rf tmp_install.sh ; echo -e \"\n\nINSTALLATION FINISHED!\n\""
+    ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments/prahom_wrapper/tests/test ; ./tmp_install.sh ; rm -rf tmp_install.sh ; echo -e \"\n\nINSTALLATION FINISHED!\n\""
 fi

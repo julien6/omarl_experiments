@@ -19,6 +19,7 @@ from os.path import expanduser
 import yaml
 import os
 import sys
+import subprocess
 
 from prahom_wrapper.observable_policy_constraint import observable_policy_constraint
 from prahom_wrapper.osr_model import obligation, organizational_model, permission
@@ -143,8 +144,34 @@ def set_ray(config: Dict):
     return config
 
 
-home = expanduser("~")
-local_file = f"{home}/miniconda3/envs/marllib/lib/python3.8/site-packages/marllib/marl/__init__.py"
+def get_conda_env_path(env_name):
+    # Run the 'conda info --envs' command
+    result = subprocess.run(['conda', 'info', '--envs'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    # Check if the command was successful
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to get conda environments: {result.stderr}")
+
+    # Parse the output to find the path of the specified environment
+    for line in result.stdout.splitlines():
+        if env_name in line:
+            # The environment name might appear more than once, ensure to pick the correct line
+            parts = line.split()
+            if len(parts) > 1 and parts[0] == env_name:
+                return parts[-1]
+    
+    raise ValueError(f"Environment '{env_name}' not found")
+
+# Example usage
+env_name = 'marllib'
+env_path = ""
+try:
+    env_path = get_conda_env_path(env_name)
+    print(f"The path of the '{env_name}' environment is: {env_path}")
+except Exception as e:
+    print(e)
+
+local_file =  f"{env_path}/lib/python3.8/site-packages/marllib/marl/__init__.py"
 
 
 def make_env(
