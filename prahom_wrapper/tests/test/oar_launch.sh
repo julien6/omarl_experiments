@@ -36,6 +36,8 @@ conda info --envs
 echo "Activating marllib environment"
 conda activate marllib
 
+export PYTHONPATH="${PYTHONPATH}:./../../../prahom_wrapper"
+
 if [ $? -ne 0 ]; then
     echo "Error during conda activation"
     exit 1

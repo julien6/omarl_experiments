@@ -23,6 +23,8 @@ conda --version
 conda create -n marllib python=3.8 -y
 conda activate marllib
 
+export PYTHONPATH="${PYTHONPATH}:./../../../prahom_wrapper"
+
 rm -rf Miniconda3-latest-Linux-x86_64.sh
 git clone https://github.com/Replicable-MARL/MARLlib.git
 cd MARLlib
@@ -54,10 +56,18 @@ echo -e "\n\nINSTALLATION ON INTERFACE LOCAL MACHINE\n"
 chmod +x tmp_install.sh
 ./tmp_install.sh
 
+# if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
+#     echo -e "\n\nINSTALLATION ON COMPUTATIONAL REMOTE SERVER\n"
+#     ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; rm -rf omarl_experiments ; mkdir omarl_experiments"
+#     rsync -avxH tmp_install.sh oar_launch.sh train_test.py  soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/
+#     rm -rf tmp_install.sh
+#     ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments ; ./tmp_install.sh ; rm -rf tmp_install.sh ; echo -e \"\n\nINSTALLATION FINISHED!\n\""
+# fi
+
 if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
     echo -e "\n\nINSTALLATION ON COMPUTATIONAL REMOTE SERVER\n"
-    ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; rm -rf omarl_experiments ; mkdir omarl_experiments"
-    rsync -avxH tmp_install.sh oar_launch.sh train_test.py soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/
+    ssh soulej@bigfoot.ciment -t "cd /bettik/soulej ; rm -rf omarl_experiments ; git clone https://github.com/julien6/omarl_experiments.git ; cd omarl_experiments ; git checkout"
+    rsync -avxH tmp_install.sh soulej@bigfoot.ciment:/bettik/soulej/omarl_experiments/
     rm -rf tmp_install.sh
     ssh soulej@bigfoot.ciment -t "cd /bettik/soulej/omarl_experiments ; ./tmp_install.sh ; rm -rf tmp_install.sh ; echo -e \"\n\nINSTALLATION FINISHED!\n\""
 fi
