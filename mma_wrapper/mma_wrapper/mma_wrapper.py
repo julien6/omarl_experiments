@@ -11,15 +11,15 @@ from pettingzoo.utils.wrappers import BaseWrapper
 from pettingzoo.utils.env import ActionType, AECEnv, AgentID, ObsType
 
 from custom_envs.movingcompany import moving_company_v0
-from prahom_wrapper.prahom_wrapper.organizational_model import cardinality, deontic_specifications, functional_specifications, group_specifications, link, link_type, obligation, organizational_model, permission, plan, plan_operator, social_preference, social_scheme, structural_specifications, time_constraint_type
-from prahom_wrapper.policy_model import joint_policy_constraint
-from prahom_wrapper.relation_model import osj_relation
-from prahom_wrapper.role_clustering import generate_r_clustering
-from prahom_wrapper.train_manager import train_test_manager
-from prahom_wrapper.history_model import observation, action
+from mma_wrapper.organizational_model import cardinality, deontic_specifications, functional_specifications, group_specifications, link, link_type, obligation, organizational_model, permission, plan, plan_operator, social_preference, social_scheme, structural_specifications, time_constraint_type
+from mma_wrapper.policy_model import joint_policy_constraint
+from mma_wrapper.relation_model import osj_relation
+from mma_wrapper.role_clustering import generate_r_clustering
+from mma_wrapper.train_manager import train_test_manager
+from mma_wrapper.history_model import observation, action
 import shutil
 
-from prahom_wrapper.transition_inferring import graph
+from mma_wrapper.transition_inferring import graph
 
 # Partial Relations with Agent History and Organization Model (PRAHOM)
 
@@ -184,7 +184,7 @@ class joint_histories:
         return False
 
 
-class prahom_wrapper(BaseWrapper):
+class mma_wrapper(BaseWrapper):
     """Creates a wrapper around `env` parameter.
 
     All AECEnv wrappers should inherit from this base class
@@ -491,7 +491,7 @@ if __name__ == "__main__":
     eval_env = moving_company_v0.parallel_env(
         render_mode="rgb_array", size=10, seed=42)
 
-    env = prahom_wrapper(aec_env, role_to_jt_histories, agt_to_cons_os)
+    env = mma_wrapper(aec_env, role_to_jt_histories, agt_to_cons_os)
 
     env.train_under_constraints(
         train_env=train_env, test_env=eval_env, total_step=1)

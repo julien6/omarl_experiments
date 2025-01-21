@@ -1,8 +1,8 @@
 from typing import Any, Callable, Dict, List, Tuple, Union
-from prahom_wrapper.prahom_wrapper.organizational_model import cardinality, organizational_model, os_encoder
-from prahom_wrapper.pattern_utils import eval_str_history_pattern, parse_str_history_pattern, history_pattern
-from prahom_wrapper.history_model import action_label, histories, joint_histories, observation_label
-from prahom_wrapper.utils import draw_networkx_edge_labels
+from mma_wrapper.organizational_model import cardinality, organizational_model, os_encoder
+from mma_wrapper.pattern_utils import eval_str_history_pattern, parse_str_history_pattern, history_pattern
+from mma_wrapper.history_model import action_label, histories, joint_histories, observation_label
+from mma_wrapper.utils import draw_networkx_edge_labels
 
 
 class joint_policy_constraint:

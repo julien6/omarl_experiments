@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from scipy.cluster.hierarchy import dendrogram, linkage
 
-from prahom_wrapper.history_model import action, observation
+from mma_wrapper.history_model import action, observation
 
 
 def longest_common_subsequence(s1, s2):
